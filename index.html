@@ -403,8 +403,42 @@
               </div>
             </div>
 
+            <!-- 新增 3 項品管核取欄位 (是 / 否) -->
+            <div class="mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
+              <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
+              </div>
+              
+              <!-- 1. 原廠包裝是否完整 -->
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-medium">1. 原廠包裝是否完整：</span>
+                <div class="flex gap-1">
+                  <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                  <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                </div>
+              </div>
+
+              <!-- 2. 是否有散貨 -->
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
+                <div class="flex gap-1">
+                  <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                  <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                </div>
+              </div>
+
+              <!-- 3. 品質(顏色、風味、流動性)是否正常 -->
+              <div class="flex items-center justify-between">
+                <span class="text-slate-600 font-medium">3. 品質(顏色/風味/流動性)正常：</span>
+                <div class="flex gap-1">
+                  <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                  <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                </div>
+              </div>
+            </div>
+
             <div class="mb-3">
-              <label class="block text-xs font-bold text-slate-600 mb-1">產品品質性狀判定：</label>
+              <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
               <div class="grid grid-cols-2 gap-2">
                 <button onclick="updateCondition('${item.id}', 'normal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
                   <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
@@ -644,7 +678,6 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // 關鍵修正：保留開頭 0 + 智慧動態標題對應 (避免空欄對位偏移)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -672,7 +705,6 @@
         return;
       }
 
-      // raw: false 強制保留字串格式(開頭0不被刪除)，defval: '' 確保空欄不偏移
       const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { 
         header: 1, 
         raw: false, 
@@ -684,7 +716,6 @@
         return;
       }
 
-      // 依第一列標題自動尋找對應欄位索引
       const headers = rawJson[0].map(h => String(h || '').trim().toLowerCase());
       
       let skuIdx = headers.findIndex(h => h.includes('sku') || h.includes('編號') || h.includes('料號'));
@@ -696,7 +727,6 @@
       let batchIdx = headers.findIndex(h => h.includes('批號') || h.includes('批次'));
       let expIdx = headers.findIndex(h => h.includes('有效') || h.includes('到期') || h.includes('期限') || h.includes('日期'));
 
-      // 備用預設欄位位置
       if (skuIdx === -1) skuIdx = 0;
       if (nameIdx === -1) nameIdx = 1;
       if (catIdx === -1) catIdx = 2;
@@ -720,7 +750,6 @@
         let rawQty = String(row[qtyIdx] || '0').replace(/[^0-9.-]/g, '');
         let parsedQty = parseFloat(rawQty) || 0;
 
-        // 格式化日期格式 (例如 2027/8/8 -> 2027-08-08)
         let expDateStr = String(row[expIdx] || '').trim();
         if (expDateStr.includes('/')) {
           const parts = expDateStr.split('/');
@@ -732,7 +761,7 @@
         const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         pendingParsedData.push({
           id: generatedId,
-          sku: skuVal, // 完全保留原本字串（例如 0012001）
+          sku: skuVal,
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
           location: String(row[locIdx] || 'A-01').trim(),
@@ -741,6 +770,9 @@
           unit: String(row[unitIdx] || 'kg').trim(),
           batchNo: String(row[batchIdx] || '').trim(),
           expDate: expDateStr,
+          pkgIntact: '是',
+          hasLooseStock: '否',
+          qualityCheck: '是',
           audited: false,
           condition: null,
           abnormalAction: '',
@@ -781,12 +813,13 @@
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
     }
 
+    // 匯出包含 3 項核取欄位 (原廠包裝完整、是否有散貨、品質正常) 的 CSV 報表
     function exportToCSV() {
       if (inventoryData.length === 0) {
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,盤點狀態,品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,原廠包裝完整,是否有散貨,品質(顏色風味流動性)正常,盤點狀態,整體品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
       inventoryData.forEach(item => {
         csv += [
           `"${item.sku || ''}"`,
@@ -798,6 +831,9 @@
           item.systemQty,
           item.actualQty ?? item.systemQty,
           `"${item.unit || ''}"`,
+          `"${item.pkgIntact || '未判定'}"`,
+          `"${item.hasLooseStock || '未判定'}"`,
+          `"${item.qualityCheck || '未判定'}"`,
           item.audited ? '已盤點' : '未盤點',
           item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定',
           `"${item.abnormalAction || ''}"`,
