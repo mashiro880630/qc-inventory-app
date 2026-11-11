@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>品管年度庫存盤點系統</title>
+  <title>盤點系統</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
@@ -27,7 +27,7 @@
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
-        <h1 class="font-bold text-lg tracking-wide">品管年度庫存盤點</h1>
+        <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
       </div>
       <div class="flex items-center space-x-2">
         <button onclick="openImportModal()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
@@ -106,12 +106,16 @@
         </select>
       </div>
 
-      <div class="flex justify-between items-center pt-1 border-t border-slate-100">
+      <div class="flex justify-between items-center pt-1 border-t border-slate-100 text-xs">
         <div class="flex items-center gap-2">
           <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
-          <label for="selectAllCheckbox" class="text-xs text-slate-600">全選目前顯示品項</label>
+          <label for="selectAllCheckbox" class="text-slate-600">全選目前顯示品項</label>
         </div>
-        <div>
+        <div class="flex items-center gap-3">
+          <button onclick="toggleExpandAll()" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
+            <i id="expandAllIcon" class="fa-solid fa-angles-down"></i>
+            <span id="expandAllBtnText">展開全部</span>
+          </button>
           <button id="batchDeleteBtn" onclick="deleteSelectedItems()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs transition">
             <i class="fa-solid fa-trash-can mr-1"></i>刪除選取 (<span id="selectedCount">0</span>)
           </button>
@@ -120,7 +124,7 @@
     </div>
 
     <!-- 品項列表卡片區 -->
-    <div id="itemList" class="space-y-3"></div>
+    <div id="itemList" class="space-y-2"></div>
 
     <!-- 空白狀態提示 -->
     <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
@@ -229,6 +233,8 @@
     let personnelList = ["張品管", "李品管", "王組長"];
     let selectedAuditor = "張品管";
     let selectedItemIds = new Set();
+    let expandedItemIds = new Set(); // 記錄展開的卡片 ID
+    let isAllExpanded = false;
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
 
@@ -317,6 +323,31 @@
       renderPersonnelList();
     }
 
+    // 單張卡片展開 / 收合切換
+    function toggleCardExpand(id) {
+      if (expandedItemIds.has(id)) {
+        expandedItemIds.delete(id);
+      } else {
+        expandedItemIds.add(id);
+      }
+      renderItemList();
+    }
+
+    // 全部展開 / 全部收合切換
+    function toggleExpandAll() {
+      isAllExpanded = !isAllExpanded;
+      if (isAllExpanded) {
+        inventoryData.forEach(item => expandedItemIds.add(item.id));
+        document.getElementById('expandAllBtnText').innerText = '收合全部';
+        document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-up';
+      } else {
+        expandedItemIds.clear();
+        document.getElementById('expandAllBtnText').innerText = '展開全部';
+        document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-down';
+      }
+      renderItemList();
+    }
+
     function renderItemList() {
       const listEl = document.getElementById('itemList');
       const emptyEl = document.getElementById('emptyState');
@@ -349,162 +380,173 @@
         const isAudited = item.audited;
         const isAbnormal = isAudited && item.condition === 'abnormal';
         const isChecked = selectedItemIds.has(item.id);
+        const isExpanded = expandedItemIds.has(item.id);
         const isExpired = item.expDate && item.expDate < todayStr;
 
         return `
           <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
             
-            <div class="flex items-start justify-between gap-2 border-b pb-2 mb-2">
-              <div class="flex items-start gap-2">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="mt-1 w-4 h-4 text-indigo-600 rounded">
-                <div>
+            <!-- 卡片頂部標頭 (點擊即可展開/收合) -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="toggleCardExpand('${item.id}')">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
+                <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="font-mono text-xs font-bold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">${item.sku}</span>
+                    <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">${item.sku}</span>
                     <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">${item.location}</span>
                     ${item.batchNo ? `<span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>` : ''}
                   </div>
-                  <h2 class="font-bold text-sm text-slate-800 mt-1">${item.name}</h2>
+                  <h2 class="font-bold text-sm text-slate-800 mt-0.5 truncate">${item.name}</h2>
                 </div>
               </div>
-              <div class="flex items-center gap-1 shrink-0">
+
+              <div class="flex items-center gap-2 shrink-0">
                 ${isAudited 
                   ? `<span class="px-2 py-0.5 rounded-full text-xs font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
                       <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-1"></i>${isAbnormal ? '異常' : '正常'}
                      </span>` 
                   : `<span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-500">待盤點</span>`}
+                <button onclick="toggleCardExpand('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
+                  <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
+                </button>
                 <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs" title="刪除品項">
                   <i class="fa-solid fa-trash-can"></i>
                 </button>
               </div>
             </div>
 
-            <div class="grid grid-cols-2 gap-2 mb-2">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號：</label>
-                <input type="text" value="${item.batchNo || ''}" placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期：</label>
-                <input type="date" value="${item.expDate || ''}" onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-slate-300'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-              </div>
-            </div>
-
-            ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold mb-2 flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
-
-            <div class="grid grid-cols-2 gap-2 mb-3 bg-slate-50 p-2 rounded-lg text-xs">
-              <div>
-                <span class="text-slate-500">帳面數量：</span>
-                <span class="font-bold text-slate-700">${item.systemQty} ${item.unit}</span>
-              </div>
-              <div class="flex items-center gap-1">
-                <span class="text-slate-500">實盤數量：</span>
-                <input type="number" value="${item.actualQty ?? item.systemQty}" onchange="updateItemField('${item.id}', 'actualQty', parseFloat(this.value)||0)" class="w-16 border rounded px-1.5 py-0.5 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                <span class="text-slate-500">${item.unit}</span>
-              </div>
-            </div>
-
-            <!-- 品管現檢核取欄位 (修改後的 3 個新名稱) -->
-            <div class="mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
-              <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
-              </div>
-              
-              <!-- 1. 包裝是否完好 -->
-              <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
-                <div class="flex gap-1">
-                  <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                  <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+            <!-- 卡片詳細數據區 (展開時才顯示) -->
+            ${isExpanded ? `
+              <div class="pt-3 mt-2 border-t border-slate-100 space-y-3">
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號：</label>
+                    <input type="text" value="${item.batchNo || ''}" placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期：</label>
+                    <input type="date" value="${item.expDate || ''}" onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-slate-300'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                  </div>
                 </div>
-              </div>
 
-              <!-- 2. 是否有散貨 -->
-              <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
-                <div class="flex gap-1">
-                  <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                  <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
+
+                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-lg text-xs">
+                  <div>
+                    <span class="text-slate-500">帳面數量：</span>
+                    <span class="font-bold text-slate-700">${item.systemQty} ${item.unit}</span>
+                  </div>
+                  <div class="flex items-center gap-1">
+                    <span class="text-slate-500">實盤數量：</span>
+                    <input type="number" value="${item.actualQty ?? item.systemQty}" onchange="updateItemField('${item.id}', 'actualQty', parseFloat(this.value)||0)" class="w-16 border rounded px-1.5 py-0.5 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    <span class="text-slate-500">${item.unit}</span>
+                  </div>
                 </div>
-              </div>
 
-              <!-- 3. 品質(包裝樣式/顏色/風味/流動性)正常 -->
-              <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
-                <div class="flex gap-1">
-                  <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                  <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                <!-- 品管現檢核取欄位 -->
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
+                  <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                    <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
+                  </div>
+                  
+                  <!-- 1. 包裝是否完好 -->
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
+                    <div class="flex gap-1">
+                      <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                      <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                    </div>
+                  </div>
+
+                  <!-- 2. 是否有散貨 -->
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
+                    <div class="flex gap-1">
+                      <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                      <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                    </div>
+                  </div>
+
+                  <!-- 3. 品質(包裝樣式/顏色/風味/流動性)正常 -->
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
+                    <div class="flex gap-1">
+                      <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                      <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
 
-            <div class="mb-3">
-              <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
-              <div class="grid grid-cols-2 gap-2">
-                <button onclick="updateCondition('${item.id}', 'normal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
-                  <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
-                </button>
-                <button onclick="updateCondition('${item.id}', 'abnormal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
-                  <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
-                </button>
-              </div>
-            </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
+                  <div class="grid grid-cols-2 gap-2">
+                    <button onclick="updateCondition('${item.id}', 'normal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
+                      <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
+                    </button>
+                    <button onclick="updateCondition('${item.id}', 'abnormal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
+                      <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
+                    </button>
+                  </div>
+                </div>
 
-            ${item.condition === 'abnormal' ? `
-              <div class="mb-3 bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
-                <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
-                <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
-                  <option value="">-- 請選擇處置方式 --</option>
-                  <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
-                  <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
-                  <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
-                  <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
-                </select>
+                ${item.condition === 'abnormal' ? `
+                  <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
+                    <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
+                    <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
+                      <option value="">-- 請選擇處置方式 --</option>
+                      <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
+                      <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
+                      <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
+                      <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
+                    </select>
+                  </div>
+                ` : ''}
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
+                  <input type="text" value="${item.note || ''}" placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                  ${item.condition === 'abnormal' ? `
+                    <div class="flex flex-wrap gap-1 mt-1">
+                      <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
+                      <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
+                      <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
+                    </div>
+                  ` : ''}
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-600 mb-1">
+                    <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
+                  </label>
+                  <div class="flex items-center gap-2">
+                    <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
+                      <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
+                      <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
+                    </label>
+                    ${item.photo ? `
+                      <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
+                        <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
+                        <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
+                      </div>
+                      <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
+                    ` : `
+                      <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
+                    `}
+                  </div>
+                </div>
+
+                <div class="flex gap-2 pt-2 border-t border-slate-100">
+                  <button onclick="saveSingleAudit('${item.id}')" class="flex-1 py-1.5 rounded-lg text-xs font-bold ${isAudited ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-sm">
+                    <i class="fa-solid fa-floppy-disk mr-1"></i>${isAudited ? '更新盤點紀錄' : '完成此項盤點'}
+                  </button>
+                  ${isAudited ? `
+                    <button onclick="resetSingleAudit('${item.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                      <i class="fa-solid fa-rotate-left mr-1"></i>重置
+                    </button>
+                  ` : ''}
+                </div>
               </div>
             ` : ''}
-
-            <div class="mb-3">
-              <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
-              <input type="text" value="${item.note || ''}" placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-              ${item.condition === 'abnormal' ? `
-                <div class="flex flex-wrap gap-1 mt-1">
-                  <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
-                  <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
-                  <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
-                </div>
-              ` : ''}
-            </div>
-
-            <div class="mb-3">
-              <label class="block text-xs font-bold text-slate-600 mb-1">
-                <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
-              </label>
-              <div class="flex items-center gap-2">
-                <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-                  <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
-                  <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
-                </label>
-                ${item.photo ? `
-                  <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
-                    <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
-                    <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
-                  </div>
-                  <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
-                ` : `
-                  <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
-                `}
-              </div>
-            </div>
-
-            <div class="flex gap-2 pt-2 border-t border-slate-100">
-              <button onclick="saveSingleAudit('${item.id}')" class="flex-1 py-1.5 rounded-lg text-xs font-bold ${isAudited ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-sm">
-                <i class="fa-solid fa-floppy-disk mr-1"></i>${isAudited ? '更新盤點紀錄' : '完成此項盤點'}
-              </button>
-              ${isAudited ? `
-                <button onclick="resetSingleAudit('${item.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
-                  <i class="fa-solid fa-rotate-left mr-1"></i>重置
-                </button>
-              ` : ''}
-            </div>
           </div>
         `;
       }).join('');
@@ -813,7 +855,6 @@
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
     }
 
-    // 匯出包含修改後的 3 項核取欄位 (包裝是否完好、是否有散貨、品質(包裝樣式/顏色/風味/流動性)正常) 的 CSV 報表
     function exportToCSV() {
       if (inventoryData.length === 0) {
         alert('目前無可匯出的資料！');
