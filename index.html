@@ -403,15 +403,15 @@
               </div>
             </div>
 
-            <!-- 新增 3 項品管核取欄位 (是 / 否) -->
+            <!-- 品管現檢核取欄位 (修改後的 3 個新名稱) -->
             <div class="mb-3 bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
               <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
                 <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
               </div>
               
-              <!-- 1. 原廠包裝是否完整 -->
+              <!-- 1. 包裝是否完好 -->
               <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-medium">1. 原廠包裝是否完整：</span>
+                <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
                 <div class="flex gap-1">
                   <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
                   <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
@@ -427,9 +427,9 @@
                 </div>
               </div>
 
-              <!-- 3. 品質(顏色、風味、流動性)是否正常 -->
+              <!-- 3. 品質(包裝樣式/顏色/風味/流動性)正常 -->
               <div class="flex items-center justify-between">
-                <span class="text-slate-600 font-medium">3. 品質(顏色/風味/流動性)正常：</span>
+                <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
                 <div class="flex gap-1">
                   <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
                   <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
@@ -813,13 +813,13 @@
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
     }
 
-    // 匯出包含 3 項核取欄位 (原廠包裝完整、是否有散貨、品質正常) 的 CSV 報表
+    // 匯出包含修改後的 3 項核取欄位 (包裝是否完好、是否有散貨、品質(包裝樣式/顏色/風味/流動性)正常) 的 CSV 報表
     function exportToCSV() {
       if (inventoryData.length === 0) {
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,原廠包裝完整,是否有散貨,品質(顏色風味流動性)正常,盤點狀態,整體品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
       inventoryData.forEach(item => {
         csv += [
           `"${item.sku || ''}"`,
