@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>品管年度庫存盤點系統 (無類別/全欄位預覽/日期自動修正版)</title>
+  <title>品管年度庫存盤點系統</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- FontAwesome Icons -->
@@ -27,7 +27,7 @@
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
-        <h1 class="font-bold text-lg tracking-wide">品管盤點 <span class="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded-full font-normal">雲端同步中</span></h1>
+        <h1 class="font-bold text-lg tracking-wide">品管年度庫存盤點</h1>
       </div>
       <div class="flex items-center space-x-2">
         <button onclick="openImportModal()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
@@ -56,7 +56,7 @@
       </div>
       <div class="text-xs text-slate-500 flex items-center gap-1">
         <span id="syncStatus" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span id="savedTimeNotice" class="font-semibold text-slate-700">即時雲端連線中</span>
+        <span id="savedTimeNotice" class="font-semibold text-slate-700">連線中</span>
       </div>
     </div>
 
@@ -111,12 +111,9 @@
           <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
           <label for="selectAllCheckbox" class="text-xs text-slate-600">全選目前顯示品項</label>
         </div>
-        <div class="flex gap-2">
+        <div>
           <button id="batchDeleteBtn" onclick="deleteSelectedItems()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs transition">
             <i class="fa-solid fa-trash-can mr-1"></i>刪除選取 (<span id="selectedCount">0</span>)
-          </button>
-          <button onclick="loadDemoData()" class="text-xs text-indigo-600 hover:underline">
-            <i class="fa-solid fa-wand-magic-sparkles mr-1"></i>寫入範例資料
           </button>
         </div>
       </div>
@@ -128,14 +125,11 @@
     <!-- 空白狀態提示 -->
     <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
       <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 mb-3"></i>
-      <h3 class="text-base font-bold text-slate-700">雲端資料庫目前尚無庫存資料</h3>
+      <h3 class="text-base font-bold text-slate-700">資料庫目前尚無庫存資料</h3>
       <p class="text-xs text-slate-500 mt-1 mb-4">請點擊上方「匯入」上傳含批號與有效日期的 Excel/CSV 檔</p>
-      <div class="flex justify-center gap-3">
+      <div class="flex justify-center">
         <button onclick="openImportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow hover:bg-indigo-700">
           <i class="fa-solid fa-file-import mr-1"></i>匯入品項主檔
-        </button>
-        <button onclick="loadDemoData()" class="bg-slate-100 text-slate-700 px-4 py-2 rounded-lg text-xs font-semibold hover:bg-slate-200">
-          載入範例資料
         </button>
       </div>
     </div>
@@ -166,7 +160,7 @@
 
   <!-- Excel/CSV 匯入 Modal -->
   <div id="importModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl max-w-2xl w-full p-4 shadow-xl">
+    <div class="bg-white rounded-xl max-w-lg w-full p-4 shadow-xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
         <h3 class="font-bold text-slate-800 text-base"><i class="fa-file-excel text-emerald-600 mr-1.5"></i>匯入 Excel / CSV 庫存主檔</h3>
         <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
@@ -174,12 +168,12 @@
       
       <div class="space-y-3">
         <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center">
-          <span>欄位順序：SKU, 品名, 儲位, 帳面量, 單位, 產品批號, 有效日期</span>
+          <span>1. 下載標準匯入範例檔 (欄位: SKU, 品名, 類別, 儲位, 帳面量, 單位, 批號, 有效日期)</span>
           <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0">下載範例</button>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">選擇檔案與編碼設定：</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. 選擇檔案與編碼設定：</label>
           <div class="flex gap-2 mb-2">
             <select id="encodingSelect" class="bg-slate-50 border text-xs rounded-lg p-1.5 flex-1">
               <option value="auto">自動判定編碼 (推薦)</option>
@@ -190,29 +184,20 @@
           <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" onchange="handleFileSelect(event)" class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100">
         </div>
 
-        <!-- 全欄位預覽視窗 -->
         <div id="importPreviewArea" class="hidden">
           <div class="flex justify-between items-center mb-1">
-            <span class="text-xs font-bold text-slate-700">全欄位解析預覽 (<span id="parsedCount">0</span> 筆)</span>
+            <span class="text-xs font-bold text-slate-700">解析預覽 (<span id="parsedCount">0</span> 筆)</span>
             <div class="space-x-2 text-xs">
               <label class="cursor-pointer"><input type="radio" name="importMode" value="append" checked> 追加模式</label>
-              <label class="cursor-pointer"><input type="radio" name="importMode" value="overwrite"> 覆蓋雲端資料</label>
+              <label class="cursor-pointer"><input type="radio" name="importMode" value="overwrite"> 覆蓋原資料</label>
             </div>
           </div>
-          <div class="max-h-56 overflow-y-auto overflow-x-auto border rounded-lg text-[11px] bg-slate-50">
-            <table class="w-full text-left whitespace-nowrap min-w-[600px]">
-              <thead class="bg-indigo-100 text-indigo-900 sticky top-0 font-bold">
-                <tr>
-                  <th class="p-2 border-b">SKU</th>
-                  <th class="p-2 border-b">品名</th>
-                  <th class="p-2 border-b">儲位</th>
-                  <th class="p-2 border-b">帳面量</th>
-                  <th class="p-2 border-b">單位</th>
-                  <th class="p-2 border-b">產品批號</th>
-                  <th class="p-2 border-b">有效日期</th>
-                </tr>
+          <div class="max-h-36 overflow-y-auto border rounded-lg text-[11px]">
+            <table class="w-full text-left">
+              <thead class="bg-slate-100 sticky top-0 text-slate-600">
+                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">批號</th><th class="p-1.5">有效日期</th></tr>
               </thead>
-              <tbody id="importPreviewTable" class="bg-white divide-y"></tbody>
+              <tbody id="importPreviewTable"></tbody>
             </table>
           </div>
         </div>
@@ -226,7 +211,7 @@
   </div>
 
   <script>
-    // 1. Firebase 初始化
+    // 1. Firebase API 專案設定資訊
     const firebaseConfig = {
       apiKey: "AIzaSyCjdef4iK_v8e1iHeF8k35zBZ0dtlyhTFI",
       authDomain: "qc-inventory-20d2e.firebaseapp.com",
@@ -253,6 +238,7 @@
       loadLocalAuditor();
     });
 
+    // 2. 監聽 Firebase 實時數據
     function initFirebaseListeners() {
       db.ref('inventory_items').on('value', (snapshot) => {
         const data = snapshot.val();
@@ -264,11 +250,12 @@
         } else {
           inventoryData = [];
         }
-        document.getElementById('savedTimeNotice').innerText = '即時同步：' + new Date().toLocaleTimeString('zh-TW');
+        document.getElementById('savedTimeNotice').innerText = '已同步：' + new Date().toLocaleTimeString('zh-TW');
         renderItemList();
       }, (error) => {
         console.error("Firebase 連線錯誤:", error);
         document.getElementById('syncStatus').className = "inline-block w-2 h-2 rounded-full bg-rose-500";
+        document.getElementById('savedTimeNotice').innerText = '連線失敗(請檢查權限)';
       });
 
       db.ref('personnel_list').on('value', (snapshot) => {
@@ -332,7 +319,7 @@
       renderPersonnelList();
     }
 
-    // 渲染主列表卡片 (已刪除類別)
+    // 渲染卡片區
     function renderItemList() {
       const listEl = document.getElementById('itemList');
       const emptyEl = document.getElementById('emptyState');
@@ -456,9 +443,10 @@
               ` : ''}
             </div>
 
+            <!-- 照片檢視與上傳區 (改為選填/非強制) -->
             <div class="mb-3">
               <label class="block text-xs font-bold text-slate-600 mb-1">
-                <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (強制拍攝/上傳)：
+                <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
               </label>
               <div class="flex items-center gap-2">
                 <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
@@ -466,13 +454,13 @@
                   <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
                 </label>
                 ${item.photo ? `
-                  <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')">
-                    <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border">
-                    <div class="absolute inset-0 bg-black/30 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">預覽</div>
+                  <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
+                    <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
+                    <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
                   </div>
-                  <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳雲端</span>
+                  <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
                 ` : `
-                  <span class="text-[11px] text-rose-500 font-medium">* 尚未拍攝</span>
+                  <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
                 `}
               </div>
             </div>
@@ -543,6 +531,7 @@
       reader.readAsDataURL(file);
     }
 
+    // 完成單筆盤點驗證（照片改為非強制，不再阻擋儲存）
     function saveSingleAudit(id) {
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
@@ -553,10 +542,6 @@
       }
       if (item.condition === 'abnormal' && !item.abnormalAction) {
         alert('【請選擇處置方式】判定異常時，必須選擇異常處置方式！');
-        return;
-      }
-      if (!item.photo) {
-        alert('【強制規定】必須拍攝或上傳產品包裝/標籤照片才可完成盤點！');
         return;
       }
 
@@ -660,3 +645,139 @@
       reader.onload = function(e) {
         currentRawArrayBuffer = e.target.result;
         parseSelectedFile();
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function parseSelectedFile() {
+      if (!currentRawArrayBuffer) return;
+      const encodingChoice = document.getElementById('encodingSelect').value;
+      let workbook;
+      
+      try {
+        if (encodingChoice === 'Big5') {
+          const decoder = new TextDecoder('big5');
+          workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), { type: 'string' });
+        } else if (encodingChoice === 'UTF-8') {
+          const decoder = new TextDecoder('utf-8');
+          workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), { type: 'string' });
+        } else {
+          try {
+            const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
+            workbook = XLSX.read(decoderUtf8.decode(currentRawArrayBuffer), { type: 'string' });
+          } catch(e) {
+            const decoderBig5 = new TextDecoder('big5');
+            workbook = XLSX.read(decoderBig5.decode(currentRawArrayBuffer), { type: 'string' });
+          }
+        }
+      } catch(err) {
+        alert('解析檔案失敗，請檢查編碼格式');
+        return;
+      }
+
+      const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { header: 1 });
+      pendingParsedData = [];
+
+      for (let i = 1; i < rawJson.length; i++) {
+        const row = rawJson[i];
+        if (!row || !row[0]) continue;
+
+        const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
+        pendingParsedData.push({
+          id: generatedId,
+          sku: String(row[0] || '').trim(),
+          name: String(row[1] || '').trim(),
+          category: String(row[2] || '原料').trim(),
+          location: String(row[3] || 'A-01').trim(),
+          systemQty: parseFloat(row[4]) || 0,
+          actualQty: parseFloat(row[4]) || 0,
+          unit: String(row[5] || 'kg').trim(),
+          batchNo: String(row[6] || '').trim(),
+          expDate: String(row[7] || '').trim(),
+          audited: false,
+          condition: null,
+          abnormalAction: '',
+          photo: null,
+          note: ''
+        });
+      }
+
+      document.getElementById('parsedCount').innerText = pendingParsedData.length;
+      document.getElementById('importPreviewTable').innerHTML = pendingParsedData.slice(0, 5).map(item => `
+        <tr class="border-b">
+          <td class="p-1 font-mono">${item.sku}</td>
+          <td class="p-1 truncate max-w-[100px]">${item.name}</td>
+          <td class="p-1 font-mono">${item.batchNo || '-'}</td>
+          <td class="p-1 font-mono">${item.expDate || '-'}</td>
+        </tr>
+      `).join('');
+      document.getElementById('importPreviewArea').classList.remove('hidden');
+      document.getElementById('confirmImportBtn').disabled = false;
+    }
+
+    function executeImport() {
+      if (pendingParsedData.length === 0) return;
+      const mode = document.querySelector('input[name="importMode"]:checked').value;
+      const updates = {};
+
+      pendingParsedData.forEach(item => {
+        updates[item.id] = item;
+      });
+
+      if (mode === 'overwrite') {
+        db.ref('inventory_items').set(updates);
+      } else {
+        db.ref('inventory_items').update(updates);
+      }
+
+      closeImportModal();
+      alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
+    }
+
+    function exportToCSV() {
+      if (inventoryData.length === 0) {
+        alert('目前無可匯出的資料！');
+        return;
+      }
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,盤點狀態,品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
+      inventoryData.forEach(item => {
+        csv += [
+          `"${item.sku || ''}"`,
+          `"${item.name || ''}"`,
+          `"${item.category || ''}"`,
+          `"${item.location || ''}"`,
+          `"${item.batchNo || ''}"`,
+          `"${item.expDate || ''}"`,
+          item.systemQty,
+          item.actualQty ?? item.systemQty,
+          `"${item.unit || ''}"`,
+          item.audited ? '已盤點' : '未盤點',
+          item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定',
+          `"${item.abnormalAction || ''}"`,
+          `"${item.auditor || ''}"`,
+          `"${item.auditTime || ''}"`,
+          `"${(item.note || '').replace(/"/g, '""')}"`,
+          item.photo ? '是' : '否'
+        ].join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `年度庫存盤點總表_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    function downloadSampleCSV() {
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,帳面數量,單位,產品批號,有效日期\n';
+      csv += 'RAW-2026-001,無水檸檬酸,原料,A-01-02,500,kg,LOT20260301,2027-03-01\n';
+      csv += 'PKG-2026-088,高密度PE瓶,包材,B-03-01,1200,pcs,LOT20260115,2028-12-31\n';
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = '盤點主檔匯入範例(含批號有效日期).csv';
+      link.click();
+    }
+  </script>
+</body>
+</html>
