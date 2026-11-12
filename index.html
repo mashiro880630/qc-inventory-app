@@ -24,19 +24,19 @@
 
   <!-- 頂部導覽列 (隨角色切換背景色) -->
   <header id="appHeader" class="bg-indigo-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-      <div class="flex items-center space-x-2">
+    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+      <div class="flex items-center space-x-2 shrink-0">
         <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
         <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
       </div>
       
-      <div class="flex items-center space-x-2">
-        <!-- 角色切換選單 -->
+      <div class="flex items-center space-x-2 flex-wrap justify-end">
+        <!-- 角色視圖選單 (依操作人員權限自動鎖定或開放) -->
         <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none">
-          <option value="qc">權限：品管人員 (QC)</option>
-          <option value="warehouse">權限：倉管人員 (Warehouse)</option>
-          <option value="buyer">權限：採購人員 (Purchasing)</option>
-          <option value="admin">權限：管理員 (Admin 密碼)</option>
+          <option value="qc" class="text-slate-800 bg-white">權限：品管人員 (QC)</option>
+          <option value="warehouse" class="text-slate-800 bg-white">權限：倉管人員 (Warehouse)</option>
+          <option value="buyer" class="text-slate-800 bg-white">權限：採購人員 (Purchasing)</option>
+          <option value="admin" class="text-slate-800 bg-white">權限：管理員 (Admin)</option>
         </select>
 
         <!-- 管理員專屬功能按鈕 -->
@@ -68,11 +68,11 @@
       <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
     </div>
 
-    <!-- 盤點人員選擇列 -->
+    <!-- 盤點人員選擇列 (選擇後自動連動對應權限頁面) -->
     <div class="bg-white rounded-xl shadow-sm p-3 mb-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 w-full sm:w-auto">
         <label class="text-xs font-bold text-slate-600 shrink-0"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i>當前操作人員：</label>
-        <select id="auditorSelect" onchange="saveSelectedAuditor()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2 font-medium">
+        <select id="auditorSelect" onchange="handleAuditorChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2 font-medium">
         </select>
       </div>
       <div class="text-xs text-slate-500 flex items-center gap-2">
@@ -115,11 +115,14 @@
 
     <!-- 搜尋與篩選工具列 -->
     <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3 space-y-2">
-      <div class="flex gap-2">
-        <div class="relative flex-1">
+      <div class="flex flex-wrap gap-2">
+        <div class="relative flex-1 min-w-[160px]">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
-          <input type="text" id="searchInput" oninput="renderItemList()" placeholder="搜尋 SKU、品名、批號或儲位..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          <input type="text" id="searchInput" oninput="renderItemList()" placeholder="搜尋 SKU、品名、批號、儲位或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
         </div>
+        <select id="companyFilter" onchange="renderItemList()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <option value="all">全部公司</option>
+        </select>
         <select id="statusFilter" onchange="renderItemList()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none">
           <option value="all">全部狀態</option>
           <option value="pending">待盤點</option>
@@ -152,8 +155,8 @@
     <!-- 空白狀態提示 -->
     <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
       <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 mb-3"></i>
-      <h3 class="text-base font-bold text-slate-700">資料庫目前尚無庫存資料</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-4">請管理員點擊上方「匯入」上傳庫存主檔</p>
+      <h3 class="text-base font-bold text-slate-700">目前無符合條件的庫存資料</h3>
+      <p class="text-xs text-slate-500 mt-1 mb-4">請調整搜尋條件，或由管理員點擊上方「匯入」上傳庫存主檔</p>
     </div>
   </main>
 
@@ -195,8 +198,8 @@
       </div>
       
       <div class="space-y-3">
-        <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center">
-          <span>1. 下載標準匯入範例檔 (欄位: SKU, 品名, 類別, 儲位, 帳面量, 單位, 批號, 有效日期)</span>
+        <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center gap-2">
+          <span>1. 下載標準範例檔 (SKU, 品名, 類別, 儲位, 帳面量, 單位, 批號, 有效日期, 公司)</span>
           <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0">下載範例</button>
         </div>
 
@@ -223,7 +226,7 @@
           <div class="max-h-36 overflow-y-auto border rounded-lg text-[11px]">
             <table class="w-full text-left">
               <thead class="bg-slate-100 sticky top-0 text-slate-600">
-                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">批號</th><th class="p-1.5">有效日期</th></tr>
+                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">批號</th><th class="p-1.5">有效日期</th><th class="p-1.5">公司</th></tr>
               </thead>
               <tbody id="importPreviewTable"></tbody>
             </table>
@@ -262,7 +265,8 @@
       { name: "系統管理員", role: "admin" }
     ];
     let selectedAuditor = "張品管";
-    let currentRole = "qc"; // 預設角色: 'qc' | 'warehouse' | 'buyer' | 'admin'
+    let currentRole = "qc"; // 當前檢視/操作角色: 'qc' | 'warehouse' | 'buyer' | 'admin'
+    let isAdminVerified = false; // 管理員密碼驗證狀態
     let isGlobalLocked = false;
     let selectedItemIds = new Set();
     let expandedItemIds = new Set();
@@ -271,9 +275,10 @@
     let currentRawArrayBuffer = null;
 
     window.addEventListener('DOMContentLoaded', () => {
-      initFirebaseListeners();
       loadLocalAuditor();
-      updateRoleUI();
+      renderAuditorOptions();
+      syncRoleWithOperator(true);
+      initFirebaseListeners();
     });
 
     function initFirebaseListeners() {
@@ -304,6 +309,7 @@
           inventoryData = [];
         }
         document.getElementById('savedTimeNotice').innerText = '已同步：' + new Date().toLocaleTimeString('zh-TW');
+        updateCompanyFilterOptions();
         renderItemList();
       }, (error) => {
         console.error("Firebase 連線錯誤:", error);
@@ -315,27 +321,96 @@
         const data = snapshot.val();
         if (data && Array.isArray(data)) {
           personnelList = data.map(item => typeof item === 'string' ? { name: item, role: 'qc' } : item);
+          syncRoleWithOperator(true);
           renderAuditorOptions();
+          renderItemList();
         }
       });
     }
 
-    // 角色切換與動態背景色彩變換
-    function handleRoleSwitch(targetRole) {
-      if (targetRole === 'admin') {
-        const pin = prompt("請輸入管理員通行密碼：", "");
-        if (pin === "8888") {
-          currentRole = "admin";
-          alert("管理員身份驗證成功！已解鎖系統全權限。");
-        } else {
-          alert("密碼錯誤！無法切換至管理員模式。");
-          document.getElementById('roleSelect').value = currentRole;
-          return;
+    // 載入本機記憶的操作人員
+    function loadLocalAuditor() {
+      const storedA = localStorage.getItem('qc_selected_auditor');
+      if (storedA) selectedAuditor = storedA;
+    }
+
+    // 初始載入或名單更新時，確保當前操作人員與權限狀態安全同步
+    function syncRoleWithOperator(isInitial = false) {
+      let person = personnelList.find(p => p.name === selectedAuditor);
+      if (!person && personnelList.length > 0) {
+        person = personnelList.find(p => p.role !== 'admin') || personnelList[0];
+        selectedAuditor = person.name;
+      }
+
+      if (person) {
+        if (person.role === 'admin' && !isAdminVerified) {
+          // 若重新整理前停留在管理員帳號，為確保安全先切回第一位非管理員人員（需重新點選並輸入密碼才解鎖）
+          const nonAdmin = personnelList.find(p => p.role !== 'admin');
+          if (isInitial && nonAdmin) {
+            selectedAuditor = nonAdmin.name;
+            currentRole = nonAdmin.role;
+          } else {
+            currentRole = 'qc';
+          }
+        } else if (person.role !== 'admin') {
+          isAdminVerified = false;
+          currentRole = person.role;
         }
-      } else {
-        currentRole = targetRole;
       }
       updateRoleUI();
+    }
+
+    // 切換「當前操作人員」時的權限檢查與頁面自動連動
+    function handleAuditorChange(newName) {
+      const targetPerson = personnelList.find(p => p.name === newName);
+      if (!targetPerson) return;
+
+      if (targetPerson.role === 'admin') {
+        if (!isAdminVerified) {
+          const pin = prompt(`【管理員身份驗證】切換至「${targetPerson.name}」需輸入管理員通行密碼：`, "");
+          if (pin === "8888") {
+            isAdminVerified = true;
+            selectedAuditor = targetPerson.name;
+            currentRole = "admin";
+            localStorage.setItem('qc_selected_auditor', selectedAuditor);
+            alert("管理員身份驗證成功！已解鎖全權限與所有頁面切換功能。");
+          } else {
+            alert("密碼錯誤！無法切換至管理員身份。");
+            document.getElementById('auditorSelect').value = selectedAuditor;
+            return;
+          }
+        } else {
+          selectedAuditor = targetPerson.name;
+          currentRole = "admin";
+          localStorage.setItem('qc_selected_auditor', selectedAuditor);
+        }
+      } else {
+        // 切換至一般人員：取消管理員解鎖狀態，並強制切換至該人員對應的頁面
+        isAdminVerified = false;
+        selectedAuditor = targetPerson.name;
+        currentRole = targetPerson.role;
+        localStorage.setItem('qc_selected_auditor', selectedAuditor);
+      }
+
+      updateRoleUI();
+      updateBatchDeleteBtn();
+      renderItemList();
+    }
+
+    // 右上角頁面視圖切換（僅已驗證的管理員可自由切換各部門頁面預覽/稽核）
+    function handleRoleSwitch(targetRole) {
+      const activePerson = personnelList.find(p => p.name === selectedAuditor);
+      const canSwitchAll = activePerson && activePerson.role === 'admin' && isAdminVerified;
+
+      if (!canSwitchAll) {
+        alert("權限不足！只有「管理員」身份且通過密碼驗證後，才能切換檢視其他部門的頁面。");
+        document.getElementById('roleSelect').value = currentRole;
+        return;
+      }
+
+      currentRole = targetRole;
+      updateRoleUI();
+      updateBatchDeleteBtn();
       renderItemList();
     }
 
@@ -344,6 +419,17 @@
       const roleBadge = document.getElementById('roleBadge');
       const header = document.getElementById('appHeader');
       const body = document.getElementById('appBody');
+      const roleSelect = document.getElementById('roleSelect');
+
+      // 判斷當前操作人員是否為已驗證的管理員
+      const activePerson = personnelList.find(p => p.name === selectedAuditor);
+      const canSwitchAll = activePerson && activePerson.role === 'admin' && isAdminVerified;
+
+      // 依操作人員權限鎖定或開放右上角選項
+      roleSelect.value = currentRole;
+      Array.from(roleSelect.options).forEach(opt => {
+        opt.disabled = canSwitchAll ? false : (opt.value !== currentRole);
+      });
 
       // 清除舊背景色類別
       header.classList.remove('bg-indigo-900', 'bg-emerald-900', 'bg-amber-900', 'bg-purple-950');
@@ -393,16 +479,6 @@
       if (!item) return;
       const targetState = !item.lockedByBuyer;
       db.ref(`inventory_items/${id}/lockedByBuyer`).set(targetState);
-    }
-
-    function loadLocalAuditor() {
-      const storedA = localStorage.getItem('qc_selected_auditor');
-      if (storedA) selectedAuditor = storedA;
-    }
-
-    function saveSelectedAuditor() {
-      selectedAuditor = document.getElementById('auditorSelect').value;
-      localStorage.setItem('qc_selected_auditor', selectedAuditor);
     }
 
     function renderAuditorOptions() {
@@ -457,6 +533,8 @@
         db.ref('personnel_list').set(personnelList);
         input.value = '';
         renderPersonnelList();
+      } else if (name) {
+        alert('該人員姓名已存在！');
       }
     }
     function removePersonnel(idx) {
@@ -467,6 +545,23 @@
       personnelList.splice(idx, 1);
       db.ref('personnel_list').set(personnelList);
       renderPersonnelList();
+    }
+
+    // 動態更新「公司別」篩選選單
+    function updateCompanyFilterOptions() {
+      const select = document.getElementById('companyFilter');
+      if (!select) return;
+      const currentVal = select.value;
+      const companies = [...new Set(inventoryData.map(i => (i.company || '').trim()).filter(Boolean))];
+      
+      select.innerHTML = `<option value="all">全部公司</option>` + 
+        companies.map(c => `<option value="${c}">${c}</option>`).join('');
+      
+      if (companies.includes(currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = 'all';
+      }
     }
 
     function toggleCardExpand(id) {
@@ -494,12 +589,15 @@
       const emptyEl = document.getElementById('emptyState');
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const filter = document.getElementById('statusFilter').value;
+      const companyFilter = document.getElementById('companyFilter').value;
 
       const filtered = inventoryData.filter(item => {
         const matchesSearch = (item.sku || '').toLowerCase().includes(search) || 
                               (item.name || '').toLowerCase().includes(search) || 
                               (item.batchNo || '').toLowerCase().includes(search) || 
-                              (item.location || '').toLowerCase().includes(search);
+                              (item.location || '').toLowerCase().includes(search) ||
+                              (item.company || '').toLowerCase().includes(search);
+        const matchesCompany = (companyFilter === 'all') || ((item.company || '') === companyFilter);
         let matchesStatus = true;
         const hasDiscrepancy = (item.systemQty !== item.actualQty);
         
@@ -508,7 +606,7 @@
         else if (filter === 'discrepancy') matchesStatus = hasDiscrepancy;
         else if (filter === 'abnormal') matchesStatus = item.audited && item.condition === 'abnormal';
         
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesCompany && matchesStatus;
       });
 
       if (inventoryData.length === 0 || filtered.length === 0) {
@@ -536,7 +634,7 @@
         return `
           <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : hasDiscrepancy ? 'border-amber-300 bg-amber-50/20' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
             
-            <!-- 卡片頂部標頭 (包含做法二 Tailwind 漂浮小黑框提示) -->
+            <!-- 卡片頂部標頭 (包含 Tailwind 漂浮小黑框提示) -->
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="toggleCardExpand('${item.id}')">
                 <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
@@ -565,6 +663,16 @@
                         <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           產品批號
+                        </div>
+                      </div>
+                    ` : ''}
+
+                    <!-- 4. 公司標籤 + 小黑框提示 -->
+                    ${item.company ? `
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-building mr-1"></i>${item.company}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          所屬公司
                         </div>
                       </div>
                     ` : ''}
@@ -929,7 +1037,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Excel/CSV 解析 (開頭 0 完全保留)
+    // Excel/CSV 解析 (開頭 0 完全保留，並支援最後一欄「公司」)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -978,6 +1086,7 @@
       let unitIdx = headers.findIndex(h => h.includes('單位'));
       let batchIdx = headers.findIndex(h => h.includes('批號') || h.includes('批次'));
       let expIdx = headers.findIndex(h => h.includes('有效') || h.includes('到期') || h.includes('期限') || h.includes('日期'));
+      let compIdx = headers.findIndex(h => h.includes('公司') || h.includes('廠區') || h.includes('company'));
 
       if (skuIdx === -1) skuIdx = 0;
       if (nameIdx === -1) nameIdx = 1;
@@ -987,6 +1096,7 @@
       if (unitIdx === -1) unitIdx = 5;
       if (batchIdx === -1) batchIdx = 6;
       if (expIdx === -1) expIdx = 7;
+      if (compIdx === -1 && headers.length > 8) compIdx = 8;
 
       pendingParsedData = [];
 
@@ -1010,6 +1120,8 @@
           }
         }
 
+        const compVal = compIdx !== -1 ? String(row[compIdx] !== undefined ? row[compIdx] : '').trim() : '';
+
         const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         pendingParsedData.push({
           id: generatedId,
@@ -1017,6 +1129,7 @@
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
           location: String(row[locIdx] || 'A-01').trim(),
+          company: compVal,
           systemQty: parsedQty,
           actualQty: parsedQty,
           unit: String(row[unitIdx] || 'kg').trim(),
@@ -1042,6 +1155,7 @@
           <td class="p-1 truncate max-w-[100px]">${item.name}</td>
           <td class="p-1 font-mono">${item.batchNo || '-'}</td>
           <td class="p-1 font-mono">${item.expDate || '-'}</td>
+          <td class="p-1">${item.company || '-'}</td>
         </tr>
       `).join('');
       document.getElementById('importPreviewArea').classList.remove('hidden');
@@ -1072,7 +1186,7 @@
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,所屬公司,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
       inventoryData.forEach(item => {
         const diff = (item.actualQty ?? item.systemQty) - item.systemQty;
         csv += [
@@ -1080,6 +1194,7 @@
           `"${item.name || ''}"`,
           `"${item.category || ''}"`,
           `"${item.location || ''}"`,
+          `"${item.company || ''}"`,
           `"${item.batchNo || ''}"`,
           `"${item.expDate || ''}"`,
           item.systemQty,
@@ -1109,9 +1224,9 @@
     }
 
     function downloadSampleCSV() {
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,帳面數量,單位,產品批號,有效日期\n';
-      csv += '0012001,乙基麥芽酚,原料,81,679.95,KG,201410,2027-08-08\n';
-      csv += '0012002,KLEEZ 乙基麥芽酚,原料,81,111,KG,201410,2027-08-08\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,帳面數量,單位,產品批號,有效日期,所屬公司\n';
+      csv += '0012001,乙基麥芽酚,原料,81,679.95,KG,201410,2027-08-08,總公司\n';
+      csv += '0012002,KLEEZ 乙基麥芽酚,原料,81,111,KG,201410,2027-08-08,分公司A\n';
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
