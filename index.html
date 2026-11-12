@@ -20,41 +20,63 @@
     body { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20">
+<body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20 transition-colors duration-300">
 
-  <!-- 頂部導覽列 -->
-  <header class="bg-indigo-900 text-white sticky top-0 z-30 shadow-md">
+  <!-- 頂部導覽列 (會隨角色動態變色) -->
+  <header id="appHeader" class="bg-indigo-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
         <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
         <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
       </div>
+      
       <div class="flex items-center space-x-2">
-        <button onclick="openImportModal()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-          <i class="fa-solid fa-file-import"></i> 匯入
-        </button>
-        <button onclick="openPersonnelModal()" class="bg-indigo-700 hover:bg-indigo-600 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-          <i class="fa-solid fa-user-gear"></i> 人員
-        </button>
-        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+        <!-- 角色切換選單 -->
+        <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none">
+          <option value="qc">權限：品管人員 (QC)</option>
+          <option value="warehouse">權限：倉管人員 (Warehouse)</option>
+          <option value="buyer">權限：採購人員 (Purchasing)</option>
+          <option value="admin">權限：管理員 (Admin 密碼)</option>
+        </select>
+
+        <!-- 管理員專屬功能按鈕 -->
+        <div id="adminControls" class="flex items-center gap-1.5 hidden">
+          <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
+            <i class="fa-solid fa-file-import"></i> 匯入
+          </button>
+          <button onclick="openPersonnelModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="人員管理">
+            <i class="fa-solid fa-user-gear"></i> 人員
+          </button>
+          <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+            <i class="fa-solid fa-lock"></i> 全域鎖定
+          </button>
+          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料">
+            <i class="fa-solid fa-trash-can"></i>
+          </button>
+        </div>
+
+        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
           <i class="fa-solid fa-file-export"></i> 匯出
-        </button>
-        <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料">
-          <i class="fa-solid fa-trash-can"></i>
         </button>
       </div>
     </div>
   </header>
 
   <main class="max-w-4xl mx-auto px-3 pt-3">
+    <!-- 全域鎖定提示條 -->
+    <div id="globalLockNotice" class="hidden bg-amber-500 text-white font-bold text-xs p-2.5 rounded-xl shadow-sm mb-3 flex items-center justify-between">
+      <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
+    </div>
+
     <!-- 盤點人員選擇列 -->
     <div class="bg-white rounded-xl shadow-sm p-3 mb-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
       <div class="flex items-center gap-2 w-full sm:w-auto">
-        <label class="text-xs font-bold text-slate-600 shrink-0"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i>當前盤點人員：</label>
+        <label class="text-xs font-bold text-slate-600 shrink-0"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i>當前操作人員：</label>
         <select id="auditorSelect" onchange="saveSelectedAuditor()" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2 font-medium">
         </select>
       </div>
-      <div class="text-xs text-slate-500 flex items-center gap-1">
+      <div class="text-xs text-slate-500 flex items-center gap-2">
+        <span id="roleBadge" class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">品管人員模式</span>
         <span id="syncStatus" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
         <span id="savedTimeNotice" class="font-semibold text-slate-700">連線中</span>
       </div>
@@ -75,7 +97,7 @@
         <div id="statNormal" class="text-lg font-black text-emerald-600">0</div>
       </div>
       <div class="bg-white p-2.5 rounded-xl border border-rose-200 shadow-sm bg-rose-50/30">
-        <div class="text-xs text-rose-600">異常</div>
+        <div class="text-xs text-rose-600">異常 / 盤差</div>
         <div id="statAbnormal" class="text-lg font-black text-rose-600">0</div>
       </div>
     </div>
@@ -102,6 +124,7 @@
           <option value="all">全部狀態</option>
           <option value="pending">待盤點</option>
           <option value="completed">已盤點</option>
+          <option value="discrepancy">帳實不符(盤差)</option>
           <option value="abnormal">品質異常</option>
         </select>
       </div>
@@ -130,12 +153,7 @@
     <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
       <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 mb-3"></i>
       <h3 class="text-base font-bold text-slate-700">資料庫目前尚無庫存資料</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-4">請點擊上方「匯入」上傳含批號與有效日期的 Excel/CSV 檔</p>
-      <div class="flex justify-center">
-        <button onclick="openImportModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-semibold shadow hover:bg-indigo-700">
-          <i class="fa-solid fa-file-import mr-1"></i>匯入品項主檔
-        </button>
-      </div>
+      <p class="text-xs text-slate-500 mt-1 mb-4">請管理員點擊上方「匯入」上傳庫存主檔</p>
     </div>
   </main>
 
@@ -151,11 +169,11 @@
   <div id="personnelModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-4 shadow-xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
-        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>品管人員名單管理</h3>
+        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員名單管理</h3>
         <button onclick="closePersonnelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="flex gap-2 mb-3">
-        <input type="text" id="newPersonInput" placeholder="輸入品管人員姓名..." class="flex-1 border rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
+        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
         <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">新增</button>
       </div>
       <div id="personnelList" class="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-lg p-2 bg-slate-50"></div>
@@ -229,11 +247,14 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 全局變數
     let inventoryData = [];
-    let personnelList = ["張品管", "李品管", "王組長"];
+    let personnelList = ["張品管", "李倉管", "王採購", "系統管理員"];
     let selectedAuditor = "張品管";
+    let currentRole = "qc"; // 預設為品管模式: 'qc' | 'warehouse' | 'buyer' | 'admin'
+    let isGlobalLocked = false;
     let selectedItemIds = new Set();
-    let expandedItemIds = new Set(); // 記錄展開的卡片 ID
+    let expandedItemIds = new Set();
     let isAllExpanded = false;
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
@@ -241,9 +262,26 @@
     window.addEventListener('DOMContentLoaded', () => {
       initFirebaseListeners();
       loadLocalAuditor();
+      updateRoleUI();
     });
 
     function initFirebaseListeners() {
+      db.ref('system_settings/isGlobalLocked').on('value', (snapshot) => {
+        isGlobalLocked = !!snapshot.val();
+        const notice = document.getElementById('globalLockNotice');
+        const lockBtn = document.getElementById('globalLockBtn');
+        if (isGlobalLocked) {
+          notice.classList.remove('hidden');
+          lockBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> 解除全域鎖定`;
+          lockBtn.className = "bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition";
+        } else {
+          notice.classList.add('hidden');
+          lockBtn.innerHTML = `<i class="fa-solid fa-lock"></i> 全域鎖定`;
+          lockBtn.className = "bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition";
+        }
+        renderItemList();
+      });
+
       db.ref('inventory_items').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -271,6 +309,81 @@
       });
     }
 
+    // 角色切換與背景色變換邏輯
+    function handleRoleSwitch(targetRole) {
+      if (targetRole === 'admin') {
+        const pin = prompt("請輸入管理員通行密碼：", "");
+        if (pin === "8888") {
+          currentRole = "admin";
+          alert("管理員身份驗證成功！已解鎖系統全權限。");
+        } else {
+          alert("密碼錯誤！無法切換至管理員模式。");
+          document.getElementById('roleSelect').value = currentRole;
+          return;
+        }
+      } else {
+        currentRole = targetRole;
+      }
+      updateRoleUI();
+      renderItemList();
+    }
+
+    function updateRoleUI() {
+      const adminControls = document.getElementById('adminControls');
+      const roleBadge = document.getElementById('roleBadge');
+      const header = document.getElementById('appHeader');
+      const body = document.getElementById('appBody');
+
+      // 清除舊背景色
+      header.classList.remove('bg-indigo-900', 'bg-emerald-900', 'bg-amber-900', 'bg-purple-950');
+      body.classList.remove('bg-slate-100', 'bg-emerald-50/50', 'bg-amber-50/40', 'bg-purple-50/40');
+
+      if (currentRole === 'admin') {
+        header.classList.add('bg-purple-950');
+        body.classList.add('bg-purple-50/40');
+        adminControls.classList.remove('hidden');
+        roleBadge.innerText = '系統管理員 (全權限)';
+        roleBadge.className = 'bg-purple-100 text-purple-800 px-2 py-0.5 rounded-full font-bold';
+      } else {
+        adminControls.classList.add('hidden');
+        if (currentRole === 'qc') {
+          header.classList.add('bg-indigo-900');
+          body.classList.add('bg-slate-100');
+          roleBadge.innerText = '品管人員模式';
+          roleBadge.className = 'bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold';
+        } else if (currentRole === 'warehouse') {
+          header.classList.add('bg-emerald-900');
+          body.classList.add('bg-emerald-50/50');
+          roleBadge.innerText = '倉管人員模式';
+          roleBadge.className = 'bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold';
+        } else if (currentRole === 'buyer') {
+          header.classList.add('bg-amber-900');
+          body.classList.add('bg-amber-50/40');
+          roleBadge.innerText = '採購人員模式';
+          roleBadge.className = 'bg-amber-100 text-amber-800 px-2 py-0.5 rounded-full font-bold';
+        }
+      }
+    }
+
+    function toggleGlobalLock() {
+      if (currentRole !== 'admin') return;
+      const targetState = !isGlobalLocked;
+      const msg = targetState 
+        ? "確定要【全域鎖定】系統嗎？鎖定後所有手機將無法修改任何紀錄。" 
+        : "確定要解除全域鎖定嗎？";
+      if (confirm(msg)) {
+        db.ref('system_settings/isGlobalLocked').set(targetState);
+      }
+    }
+
+    function toggleBuyerLock(id) {
+      if (currentRole !== 'buyer' && currentRole !== 'admin') return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item) return;
+      const targetState = !item.lockedByBuyer;
+      db.ref(`inventory_items/${id}/lockedByBuyer`).set(targetState);
+    }
+
     function loadLocalAuditor() {
       const storedA = localStorage.getItem('qc_selected_auditor');
       if (storedA) selectedAuditor = storedA;
@@ -287,6 +400,7 @@
     }
 
     function openPersonnelModal() {
+      if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單'); return; }
       renderPersonnelList();
       document.getElementById('personnelModal').classList.remove('hidden');
     }
@@ -315,7 +429,7 @@
     }
     function removePersonnel(idx) {
       if (personnelList.length <= 1) {
-        alert('請至少保留一名品管人員');
+        alert('請至少保留一名人員');
         return;
       }
       personnelList.splice(idx, 1);
@@ -323,17 +437,12 @@
       renderPersonnelList();
     }
 
-    // 單張卡片展開 / 收合切換
     function toggleCardExpand(id) {
-      if (expandedItemIds.has(id)) {
-        expandedItemIds.delete(id);
-      } else {
-        expandedItemIds.add(id);
-      }
+      if (expandedItemIds.has(id)) expandedItemIds.delete(id);
+      else expandedItemIds.add(id);
       renderItemList();
     }
 
-    // 全部展開 / 全部收合切換
     function toggleExpandAll() {
       isAllExpanded = !isAllExpanded;
       if (isAllExpanded) {
@@ -360,9 +469,13 @@
                               (item.batchNo || '').toLowerCase().includes(search) || 
                               (item.location || '').toLowerCase().includes(search);
         let matchesStatus = true;
+        const hasDiscrepancy = (item.systemQty !== item.actualQty);
+        
         if (filter === 'pending') matchesStatus = !item.audited;
         else if (filter === 'completed') matchesStatus = item.audited;
+        else if (filter === 'discrepancy') matchesStatus = hasDiscrepancy;
         else if (filter === 'abnormal') matchesStatus = item.audited && item.condition === 'abnormal';
+        
         return matchesSearch && matchesStatus;
       });
 
@@ -382,11 +495,15 @@
         const isChecked = selectedItemIds.has(item.id);
         const isExpanded = expandedItemIds.has(item.id);
         const isExpired = item.expDate && item.expDate < todayStr;
+        const hasDiscrepancy = (item.systemQty !== item.actualQty);
+
+        const isWarehouseLocked = isGlobalLocked || item.lockedByBuyer;
+        const isQcLocked = isGlobalLocked;
+        const isBuyerLocked = isGlobalLocked;
 
         return `
-          <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
+          <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : hasDiscrepancy ? 'border-amber-300 bg-amber-50/20' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
             
-            <!-- 卡片頂部標頭 (點擊即可展開/收合) -->
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="toggleCardExpand('${item.id}')">
                 <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
@@ -395,6 +512,8 @@
                     <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">${item.sku}</span>
                     <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">${item.location}</span>
                     ${item.batchNo ? `<span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>` : ''}
+                    ${item.lockedByBuyer ? `<span class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>採購已鎖定</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">盤差: ${item.actualQty - item.systemQty}</span>` : ''}
                   </div>
                   <h2 class="font-bold text-sm text-slate-800 mt-0.5 truncate">${item.name}</h2>
                 </div>
@@ -409,23 +528,25 @@
                 <button onclick="toggleCardExpand('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
                   <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
                 </button>
-                <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs" title="刪除品項">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
+                ${currentRole === 'admin' ? `
+                  <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs" title="刪除品項">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                ` : ''}
               </div>
             </div>
 
-            <!-- 卡片詳細數據區 (展開時才顯示) -->
             ${isExpanded ? `
               <div class="pt-3 mt-2 border-t border-slate-100 space-y-3">
+                
                 <div class="grid grid-cols-2 gap-2">
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號：</label>
-                    <input type="text" value="${item.batchNo || ''}" placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 (倉管/品管)：</label>
+                    <input type="text" value="${item.batchNo || ''}" ${isWarehouseLocked ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500">
                   </div>
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期：</label>
-                    <input type="date" value="${item.expDate || ''}" onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-slate-300'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期 (倉管/品管)：</label>
+                    <input type="date" value="${item.expDate || ''}" ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-slate-300'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100">
                   </div>
                 </div>
 
@@ -438,113 +559,132 @@
                   </div>
                   <div class="flex items-center gap-1">
                     <span class="text-slate-500">實盤數量：</span>
-                    <input type="number" value="${item.actualQty ?? item.systemQty}" onchange="updateItemField('${item.id}', 'actualQty', parseFloat(this.value)||0)" class="w-16 border rounded px-1.5 py-0.5 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    <input type="number" value="${item.actualQty ?? item.systemQty}" ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'actualQty', parseFloat(this.value)||0)" class="w-20 border rounded px-1.5 py-0.5 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-200">
                     <span class="text-slate-500">${item.unit}</span>
                   </div>
                 </div>
 
-                <!-- 品管現檢核取欄位 -->
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
-                  <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                    <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
+                ${(currentRole === 'buyer' || currentRole === 'admin') ? `
+                  <div class="bg-amber-50/60 border border-amber-200 p-2.5 rounded-lg text-xs space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="font-bold text-amber-900"><i class="fa-solid fa-cart-shopping mr-1"></i> 採購覆核與鎖定控制：</span>
+                      <button onclick="toggleBuyerLock('${item.id}')" ${isBuyerLocked ? 'disabled' : ''} class="px-2.5 py-1 rounded text-xs font-bold ${item.lockedByBuyer ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'} shadow-sm transition">
+                        <i class="fa-solid ${item.lockedByBuyer ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${item.lockedByBuyer ? '解鎖倉管輸入' : '鎖定倉管輸入'}
+                      </button>
+                    </div>
+                    <div>
+                      <input type="text" value="${item.buyerNote || ''}" ${isBuyerLocked ? 'disabled' : ''} placeholder="採購對接說明 (如: 安排退貨、通知廠商補發...)" onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500">
+                    </div>
                   </div>
-                  
-                  <!-- 1. 包裝是否完好 -->
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
-                    <div class="flex gap-1">
-                      <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                      <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                ` : (item.buyerNote ? `
+                  <div class="text-xs bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-900">
+                    <span class="font-bold">採購覆核說明：</span> ${item.buyerNote}
+                  </div>
+                ` : '')}
+
+                ${(currentRole === 'qc' || currentRole === 'admin') ? `
+                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
+                    <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                      <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                      </div>
                     </div>
                   </div>
 
-                  <!-- 2. 是否有散貨 -->
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
-                    <div class="flex gap-1">
-                      <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                      <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button onclick="updateCondition('${item.id}', 'normal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
+                        <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
+                      </button>
+                      <button onclick="updateCondition('${item.id}', 'abnormal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
+                      </button>
                     </div>
                   </div>
 
-                  <!-- 3. 品質(包裝樣式/顏色/風味/流動性)正常 -->
-                  <div class="flex items-center justify-between">
-                    <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
-                    <div class="flex gap-1">
-                      <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                      <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                  ${item.condition === 'abnormal' ? `
+                    <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
+                      <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
+                      <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" ${isQcLocked ? 'disabled' : ''} class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
+                        <option value="">-- 請選擇處置方式 --</option>
+                        <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
+                        <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
+                        <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
+                        <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
+                      </select>
+                    </div>
+                  ` : ''}
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
+                    <input type="text" value="${item.note || ''}" ${isQcLocked ? 'disabled' : ''} placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    ${item.condition === 'abnormal' && !isQcLocked ? `
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
+                        <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
+                        <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">
+                      <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
+                    </label>
+                    <div class="flex items-center gap-2">
+                      ${!isQcLocked ? `
+                        <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
+                          <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
+                          <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
+                        </label>
+                      ` : ''}
+                      ${item.photo ? `
+                        <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
+                          <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
+                          <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
+                        </div>
+                        <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
+                      ` : `
+                        <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
+                      `}
                     </div>
                   </div>
-                </div>
 
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
-                  <div class="grid grid-cols-2 gap-2">
-                    <button onclick="updateCondition('${item.id}', 'normal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
-                      <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
+                  <div class="flex gap-2 pt-2 border-t border-slate-100">
+                    <button onclick="saveSingleAudit('${item.id}')" ${isQcLocked ? 'disabled' : ''} class="flex-1 py-1.5 rounded-lg text-xs font-bold ${isAudited ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-sm disabled:opacity-50">
+                      <i class="fa-solid fa-floppy-disk mr-1"></i>${isAudited ? '更新品管判定' : '完成品管判定'}
                     </button>
-                    <button onclick="updateCondition('${item.id}', 'abnormal')" class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
-                      <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
-                    </button>
-                  </div>
-                </div>
-
-                ${item.condition === 'abnormal' ? `
-                  <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
-                    <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
-                    <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
-                      <option value="">-- 請選擇處置方式 --</option>
-                      <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
-                      <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
-                      <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
-                      <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
-                    </select>
+                    ${isAudited && !isQcLocked ? `
+                      <button onclick="resetSingleAudit('${item.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
+                        <i class="fa-solid fa-rotate-left mr-1"></i>重置
+                      </button>
+                    ` : ''}
                   </div>
                 ` : ''}
 
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
-                  <input type="text" value="${item.note || ''}" placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                  ${item.condition === 'abnormal' ? `
-                    <div class="flex flex-wrap gap-1 mt-1">
-                      <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
-                      <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
-                      <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
-                    </div>
-                  ` : ''}
-                </div>
-
-                <div>
-                  <label class="block text-xs font-bold text-slate-600 mb-1">
-                    <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
-                  </label>
-                  <div class="flex items-center gap-2">
-                    <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-                      <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
-                      <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
-                    </label>
-                    ${item.photo ? `
-                      <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
-                        <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
-                        <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
-                      </div>
-                      <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
-                    ` : `
-                      <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
-                    `}
-                  </div>
-                </div>
-
-                <div class="flex gap-2 pt-2 border-t border-slate-100">
-                  <button onclick="saveSingleAudit('${item.id}')" class="flex-1 py-1.5 rounded-lg text-xs font-bold ${isAudited ? 'bg-slate-200 text-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700'} shadow-sm">
-                    <i class="fa-solid fa-floppy-disk mr-1"></i>${isAudited ? '更新盤點紀錄' : '完成此項盤點'}
-                  </button>
-                  ${isAudited ? `
-                    <button onclick="resetSingleAudit('${item.id}')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100">
-                      <i class="fa-solid fa-rotate-left mr-1"></i>重置
-                    </button>
-                  ` : ''}
-                </div>
               </div>
             ` : ''}
           </div>
@@ -555,16 +695,19 @@
     }
 
     function updateItemField(id, field, value) {
+      if (isGlobalLocked) return;
       db.ref(`inventory_items/${id}/${field}`).set(value);
     }
 
     function updateCondition(id, cond) {
+      if (isGlobalLocked) return;
       const updates = { condition: cond };
       if (cond === 'normal') updates.abnormalAction = '';
       db.ref(`inventory_items/${id}`).update(updates);
     }
 
     function addNoteChip(id, text) {
+      if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
       if (item) {
         const newNote = item.note ? `${item.note}；${text}` : text;
@@ -573,6 +716,7 @@
     }
 
     function handlePhotoUpload(id, event) {
+      if (isGlobalLocked) return;
       const file = event.target.files[0];
       if (!file) return;
 
@@ -604,15 +748,16 @@
     }
 
     function saveSingleAudit(id) {
+      if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
 
       if (!item.condition) {
-        alert('【請選擇品質性狀】必須點選「正常」或「異常」！');
+        alert('【請選擇品質性狀】必須點選 PASS 或 FAIL！');
         return;
       }
       if (item.condition === 'abnormal' && !item.abnormalAction) {
-        alert('【請選擇處置方式】判定異常時，必須選擇異常處置方式！');
+        alert('【請選擇處置方式】判定 FAIL 時，必須選擇異常處置方式！');
         return;
       }
 
@@ -624,7 +769,8 @@
     }
 
     function resetSingleAudit(id) {
-      if (!confirm('確定要重置雲端此品項的盤點紀錄嗎？')) return;
+      if (isGlobalLocked) return;
+      if (!confirm('確定要重置此品項的盤點紀錄嗎？')) return;
       db.ref(`inventory_items/${id}`).update({
         audited: false,
         condition: null,
@@ -635,7 +781,8 @@
     }
 
     function deleteSingleItem(id) {
-      if (!confirm('確定要從雲端資料庫徹底刪除此筆品項嗎？')) return;
+      if (currentRole !== 'admin') { alert('只有管理員可以刪除品項'); return; }
+      if (!confirm('確定要徹底刪除此筆品項嗎？')) return;
       db.ref(`inventory_items/${id}`).remove();
     }
 
@@ -658,7 +805,7 @@
     function updateBatchDeleteBtn() {
       const btn = document.getElementById('batchDeleteBtn');
       const countEl = document.getElementById('selectedCount');
-      if (selectedItemIds.size > 0) {
+      if (selectedItemIds.size > 0 && currentRole === 'admin') {
         btn.classList.remove('hidden');
         countEl.innerText = selectedItemIds.size;
       } else {
@@ -667,7 +814,8 @@
     }
 
     function deleteSelectedItems() {
-      if (!confirm(`確定要從雲端徹底刪除選取的 ${selectedItemIds.size} 筆品項嗎？`)) return;
+      if (currentRole !== 'admin') return;
+      if (!confirm(`確定要徹底刪除選取的 ${selectedItemIds.size} 筆品項嗎？`)) return;
       selectedItemIds.forEach(id => {
         db.ref(`inventory_items/${id}`).remove();
       });
@@ -676,6 +824,7 @@
     }
 
     function confirmClearAllData() {
+      if (currentRole !== 'admin') return;
       if (confirm('【危險動作】確定要清空雲端資料庫中「所有」品項資料嗎？此動作無法復原！')) {
         db.ref('inventory_items').remove();
         selectedItemIds.clear();
@@ -686,13 +835,13 @@
       const total = inventoryData.length;
       const completed = inventoryData.filter(i => i.audited).length;
       const normal = inventoryData.filter(i => i.audited && i.condition === 'normal').length;
-      const abnormal = inventoryData.filter(i => i.audited && i.condition === 'abnormal').length;
+      const abnormalOrDisc = inventoryData.filter(i => (i.audited && i.condition === 'abnormal') || (i.systemQty !== i.actualQty)).length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       document.getElementById('statTotal').innerText = total;
       document.getElementById('statCompleted').innerText = completed;
       document.getElementById('statNormal').innerText = normal;
-      document.getElementById('statAbnormal').innerText = abnormal;
+      document.getElementById('statAbnormal').innerText = abnormalOrDisc;
       document.getElementById('progressPercent').innerText = percent + '%';
       document.getElementById('progressBar').style.width = percent + '%';
     }
@@ -705,7 +854,10 @@
       document.getElementById('imageViewerModal').classList.add('hidden');
     }
 
-    function openImportModal() { document.getElementById('importModal').classList.remove('hidden'); }
+    function openImportModal() { 
+      if (currentRole !== 'admin') { alert('只有管理員可以匯入主檔'); return; }
+      document.getElementById('importModal').classList.remove('hidden'); 
+    }
     function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
 
     function handleFileSelect(event) {
@@ -720,6 +872,7 @@
       reader.readAsArrayBuffer(file);
     }
 
+    // Excel/CSV 解析（強制字串讀取，開頭 0 100% 完整保留）
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -747,6 +900,7 @@
         return;
       }
 
+      // raw: false 強制保持文字全貌（絕不濾掉開頭的 0）
       const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { 
         header: 1, 
         raw: false, 
@@ -784,7 +938,8 @@
         const row = rawJson[i];
         if (!row || row.length === 0) continue;
 
-        const skuVal = String(row[skuIdx] !== undefined ? row[skuIdx] : '').trim();
+        // 嚴格移除隱藏不可見字元，保持原生 SKU 字串（開頭有 0 完整保留）
+        const skuVal = String(row[skuIdx] !== undefined ? row[skuIdx] : '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
         const nameVal = String(row[nameIdx] !== undefined ? row[nameIdx] : '').trim();
         
         if (!skuVal && !nameVal) continue;
@@ -803,7 +958,7 @@
         const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         pendingParsedData.push({
           id: generatedId,
-          sku: skuVal,
+          sku: skuVal, // 純字串格式（例如 0212001）
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
           location: String(row[locIdx] || 'A-01').trim(),
@@ -815,6 +970,8 @@
           pkgIntact: '是',
           hasLooseStock: '否',
           qualityCheck: '是',
+          buyerNote: '',
+          lockedByBuyer: false,
           audited: false,
           condition: null,
           abnormalAction: '',
@@ -860,8 +1017,9 @@
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,盤點人員,盤點時間,備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲位,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
       inventoryData.forEach(item => {
+        const diff = (item.actualQty ?? item.systemQty) - item.systemQty;
         csv += [
           `"${item.sku || ''}"`,
           `"${item.name || ''}"`,
@@ -871,6 +1029,7 @@
           `"${item.expDate || ''}"`,
           item.systemQty,
           item.actualQty ?? item.systemQty,
+          diff,
           `"${item.unit || ''}"`,
           `"${item.pkgIntact || '未判定'}"`,
           `"${item.hasLooseStock || '未判定'}"`,
@@ -878,6 +1037,8 @@
           item.audited ? '已盤點' : '未盤點',
           item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定',
           `"${item.abnormalAction || ''}"`,
+          `"${(item.buyerNote || '').replace(/"/g, '""')}"`,
+          item.lockedByBuyer ? '是' : '否',
           `"${item.auditor || ''}"`,
           `"${item.auditTime || ''}"`,
           `"${(item.note || '').replace(/"/g, '""')}"`,
