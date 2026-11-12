@@ -312,6 +312,14 @@
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
 
+    // 精準計算盤差：保留至小數點後四位，並自動省略後方多餘的 0
+    function calcDiscrepancy(actualQty, systemQty) {
+      const actual = actualQty ?? systemQty ?? 0;
+      const system = systemQty ?? 0;
+      const rounded = Number((actual - system).toFixed(4));
+      return rounded === 0 ? 0 : rounded;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadLocalAuditor();
       renderAuditorOptions();
@@ -675,7 +683,8 @@
                               (item.company || '').toLowerCase().includes(search);
         const matchesCompany = (companyFilter === 'all') || ((item.company || '') === companyFilter);
         let matchesStatus = true;
-        const hasDiscrepancy = (item.systemQty !== item.actualQty);
+        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
+        const hasDiscrepancy = (diff !== 0);
         
         if (filter === 'pending') matchesStatus = !item.audited;
         else if (filter === 'completed') matchesStatus = item.audited;
@@ -734,7 +743,8 @@
         const isChecked = selectedItemIds.has(item.id);
         const isExpanded = expandedItemIds.has(item.id);
         const isExpired = item.expDate && item.expDate < todayStr;
-        const hasDiscrepancy = (item.systemQty !== item.actualQty);
+        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
+        const hasDiscrepancy = (diff !== 0);
 
         const isWarehouseLocked = isGlobalLocked || item.lockedByBuyer;
         const isQcLocked = isGlobalLocked;
@@ -787,7 +797,7 @@
                     ` : ''}
 
                     ${item.lockedByBuyer ? `<span class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>採購已鎖定</span>` : ''}
-                    ${hasDiscrepancy ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">盤差: ${item.actualQty - item.systemQty}</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
                   </div>
                   <h2 class="font-bold text-sm text-slate-800 mt-0.5 truncate">${item.name}</h2>
                 </div>
@@ -1121,7 +1131,7 @@
       const total = inventoryData.length;
       const completed = inventoryData.filter(i => i.audited).length;
       const normal = inventoryData.filter(i => i.audited && i.condition === 'normal').length;
-      const abnormalOrDisc = inventoryData.filter(i => (i.audited && i.condition === 'abnormal') || (i.systemQty !== i.actualQty)).length;
+      const abnormalOrDisc = inventoryData.filter(i => (i.audited && i.condition === 'abnormal') || (calcDiscrepancy(i.actualQty, i.systemQty) !== 0)).length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       document.getElementById('statTotal').innerText = total;
@@ -1309,7 +1319,7 @@
       }
       let csv = '\uFEFFSKU編號,品名,類別,儲存地點,所屬公司,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
       inventoryData.forEach(item => {
-        const diff = (item.actualQty ?? item.systemQty) - item.systemQty;
+        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
         csv += [
           `"${item.sku || ''}"`,
           `"${item.name || ''}"`,
