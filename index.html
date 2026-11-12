@@ -22,7 +22,7 @@
 </head>
 <body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20 transition-colors duration-300">
 
-  <!-- 頂部導覽列 (會隨角色動態變色) -->
+  <!-- 頂部導覽列 (隨角色切換背景色) -->
   <header id="appHeader" class="bg-indigo-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
       <div class="flex items-center space-x-2">
@@ -165,16 +165,22 @@
     </div>
   </div>
 
-  <!-- 人員管理 Modal -->
+  <!-- 人員與權限管理 Modal -->
   <div id="personnelModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-4 shadow-xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
-        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員名單管理</h3>
+        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員與權限管理</h3>
         <button onclick="closePersonnelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="flex gap-2 mb-3">
-        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-3 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
-        <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700">新增</button>
+        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
+        <select id="newPersonRole" class="border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
+          <option value="qc">品管 (QC)</option>
+          <option value="warehouse">倉管 (Warehouse)</option>
+          <option value="buyer">採購 (Purchasing)</option>
+          <option value="admin">管理員 (Admin)</option>
+        </select>
+        <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
       </div>
       <div id="personnelList" class="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-lg p-2 bg-slate-50"></div>
     </div>
@@ -249,9 +255,14 @@
 
     // 全局變數
     let inventoryData = [];
-    let personnelList = ["張品管", "李倉管", "王採購", "系統管理員"];
+    let personnelList = [
+      { name: "張品管", role: "qc" },
+      { name: "李倉管", role: "warehouse" },
+      { name: "王採購", role: "buyer" },
+      { name: "系統管理員", role: "admin" }
+    ];
     let selectedAuditor = "張品管";
-    let currentRole = "qc"; // 預設為品管模式: 'qc' | 'warehouse' | 'buyer' | 'admin'
+    let currentRole = "qc"; // 預設角色: 'qc' | 'warehouse' | 'buyer' | 'admin'
     let isGlobalLocked = false;
     let selectedItemIds = new Set();
     let expandedItemIds = new Set();
@@ -303,13 +314,13 @@
       db.ref('personnel_list').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && Array.isArray(data)) {
-          personnelList = data;
+          personnelList = data.map(item => typeof item === 'string' ? { name: item, role: 'qc' } : item);
           renderAuditorOptions();
         }
       });
     }
 
-    // 角色切換與背景色變換邏輯
+    // 角色切換與動態背景色彩變換
     function handleRoleSwitch(targetRole) {
       if (targetRole === 'admin') {
         const pin = prompt("請輸入管理員通行密碼：", "");
@@ -334,7 +345,7 @@
       const header = document.getElementById('appHeader');
       const body = document.getElementById('appBody');
 
-      // 清除舊背景色
+      // 清除舊背景色類別
       header.classList.remove('bg-indigo-900', 'bg-emerald-900', 'bg-amber-900', 'bg-purple-950');
       body.classList.remove('bg-slate-100', 'bg-emerald-50/50', 'bg-amber-50/40', 'bg-purple-50/40');
 
@@ -396,11 +407,16 @@
 
     function renderAuditorOptions() {
       const select = document.getElementById('auditorSelect');
-      select.innerHTML = personnelList.map(p => `<option value="${p}" ${p === selectedAuditor ? 'selected' : ''}>${p}</option>`).join('');
+      const roleMap = { qc: '品管', warehouse: '倉管', buyer: '採購', admin: '管理員' };
+      select.innerHTML = personnelList.map(p => {
+        const name = typeof p === 'object' ? p.name : p;
+        const role = typeof p === 'object' ? p.role : 'qc';
+        return `<option value="${name}" ${name === selectedAuditor ? 'selected' : ''}>${name} (${roleMap[role] || '人員'})</option>`;
+      }).join('');
     }
 
     function openPersonnelModal() {
-      if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單'); return; }
+      if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單與權限'); return; }
       renderPersonnelList();
       document.getElementById('personnelModal').classList.remove('hidden');
     }
@@ -410,18 +426,34 @@
     }
     function renderPersonnelList() {
       const listEl = document.getElementById('personnelList');
+      const roleNames = { qc: '品管 (QC)', warehouse: '倉管 (Warehouse)', buyer: '採購 (Buyer)', admin: '管理員 (Admin)' };
+      const roleColors = { 
+        qc: 'bg-indigo-100 text-indigo-800', 
+        warehouse: 'bg-emerald-100 text-emerald-800', 
+        buyer: 'bg-amber-100 text-amber-800', 
+        admin: 'bg-purple-100 text-purple-800' 
+      };
+
       listEl.innerHTML = personnelList.map((p, idx) => `
         <div class="flex justify-between items-center py-1.5 px-2">
-          <span class="text-xs text-slate-700 font-medium">${p}</span>
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-800 font-bold">${p.name}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${roleColors[p.role] || 'bg-slate-100'}">
+              ${roleNames[p.role] || '一般'}
+            </span>
+          </div>
           <button onclick="removePersonnel(${idx})" class="text-rose-500 hover:text-rose-700 text-xs px-1"><i class="fa-solid fa-trash-can"></i></button>
         </div>
       `).join('');
     }
     function addPersonnel() {
       const input = document.getElementById('newPersonInput');
-      const val = input.value.trim();
-      if (val && !personnelList.includes(val)) {
-        personnelList.push(val);
+      const roleSelect = document.getElementById('newPersonRole');
+      const name = input.value.trim();
+      const role = roleSelect.value;
+
+      if (name && !personnelList.some(p => p.name === name)) {
+        personnelList.push({ name: name, role: role });
         db.ref('personnel_list').set(personnelList);
         input.value = '';
         renderPersonnelList();
@@ -504,14 +536,39 @@
         return `
           <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : hasDiscrepancy ? 'border-amber-300 bg-amber-50/20' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
             
+            <!-- 卡片頂部標頭 (包含做法二 Tailwind 漂浮小黑框提示) -->
             <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="toggleCardExpand('${item.id}')">
                 <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">${item.sku}</span>
-                    <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold">${item.location}</span>
-                    ${item.batchNo ? `<span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>` : ''}
+                    
+                    <!-- 1. SKU 標籤 + 小黑框提示 -->
+                    <div class="relative group inline-block">
+                      <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded cursor-pointer">${item.sku}</span>
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                        SKU 料號
+                      </div>
+                    </div>
+
+                    <!-- 2. 儲位標籤 + 小黑框提示 -->
+                    <div class="relative group inline-block">
+                      <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer">${item.location}</span>
+                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                        儲位編號
+                      </div>
+                    </div>
+
+                    <!-- 3. 批號標籤 + 小黑框提示 -->
+                    ${item.batchNo ? `
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          產品批號
+                        </div>
+                      </div>
+                    ` : ''}
+
                     ${item.lockedByBuyer ? `<span class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>採購已鎖定</span>` : ''}
                     ${hasDiscrepancy ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded font-bold">盤差: ${item.actualQty - item.systemQty}</span>` : ''}
                   </div>
@@ -872,7 +929,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Excel/CSV 解析（強制字串讀取，開頭 0 100% 完整保留）
+    // Excel/CSV 解析 (開頭 0 完全保留)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -900,7 +957,6 @@
         return;
       }
 
-      // raw: false 強制保持文字全貌（絕不濾掉開頭的 0）
       const rawJson = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], { 
         header: 1, 
         raw: false, 
@@ -938,7 +994,6 @@
         const row = rawJson[i];
         if (!row || row.length === 0) continue;
 
-        // 嚴格移除隱藏不可見字元，保持原生 SKU 字串（開頭有 0 完整保留）
         const skuVal = String(row[skuIdx] !== undefined ? row[skuIdx] : '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
         const nameVal = String(row[nameIdx] !== undefined ? row[nameIdx] : '').trim();
         
@@ -958,7 +1013,7 @@
         const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         pendingParsedData.push({
           id: generatedId,
-          sku: skuVal, // 純字串格式（例如 0212001）
+          sku: skuVal,
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
           location: String(row[locIdx] || 'A-01').trim(),
