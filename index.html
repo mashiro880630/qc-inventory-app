@@ -118,29 +118,35 @@
       <div class="flex flex-wrap gap-2">
         <div class="relative flex-1 min-w-[160px]">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
-          <input type="text" id="searchInput" oninput="renderItemList()" placeholder="搜尋 SKU、品名、批號、儲位或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          <input type="text" id="searchInput" oninput="handleFilterChange()" placeholder="搜尋 SKU、品名、批號、儲存地點或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
         </div>
-        <select id="companyFilter" onchange="renderItemList()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+        <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
           <option value="all">全部公司</option>
         </select>
-        <select id="statusFilter" onchange="renderItemList()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none">
+        <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none">
           <option value="all">全部狀態</option>
           <option value="pending">待盤點</option>
           <option value="completed">已盤點</option>
           <option value="discrepancy">帳實不符(盤差)</option>
           <option value="abnormal">品質異常</option>
         </select>
+        <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
+          <option value="20" selected>每頁 20 筆</option>
+          <option value="50">每頁 50 筆</option>
+          <option value="100">每頁 100 筆</option>
+          <option value="all">全部顯示</option>
+        </select>
       </div>
 
       <div class="flex justify-between items-center pt-1 border-t border-slate-100 text-xs">
         <div class="flex items-center gap-2">
           <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
-          <label for="selectAllCheckbox" class="text-slate-600">全選目前顯示品項</label>
+          <label for="selectAllCheckbox" class="text-slate-600">全選本頁品項</label>
         </div>
         <div class="flex items-center gap-3">
           <button onclick="toggleExpandAll()" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
             <i id="expandAllIcon" class="fa-solid fa-angles-down"></i>
-            <span id="expandAllBtnText">展開全部</span>
+            <span id="expandAllBtnText">展開本頁</span>
           </button>
           <button id="batchDeleteBtn" onclick="deleteSelectedItems()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs transition">
             <i class="fa-solid fa-trash-can mr-1"></i>刪除選取 (<span id="selectedCount">0</span>)
@@ -151,6 +157,20 @@
 
     <!-- 品項列表卡片區 -->
     <div id="itemList" class="space-y-2"></div>
+
+    <!-- 分頁導覽控制列 -->
+    <div id="paginationControls" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+      <div id="paginationInfo" class="text-slate-600 font-medium">顯示第 1 - 20 筆，共 0 筆</div>
+      <div class="flex items-center gap-1.5">
+        <button id="prevPageBtn" onclick="changePage(currentPage - 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
+          <i class="fa-solid fa-chevron-left mr-1"></i>上一頁
+        </button>
+        <span id="pageIndicator" class="px-2.5 py-1.5 font-bold text-indigo-700 bg-indigo-50 rounded-lg">第 1 / 1 頁</span>
+        <button id="nextPageBtn" onclick="changePage(currentPage + 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
+          下一頁<i class="fa-solid fa-chevron-right ml-1"></i>
+        </button>
+      </div>
+    </div>
 
     <!-- 空白狀態提示 -->
     <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
@@ -199,7 +219,7 @@
       
       <div class="space-y-3">
         <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center gap-2">
-          <span>1. 下載標準範例檔 (SKU, 品名, 類別, 儲位, 帳面量, 單位, 批號, 有效日期, 公司)</span>
+          <span>1. 下載標準範例檔 (SKU, 品名, 類別, 儲存地點, 帳面量, 單位, 批號, 有效日期, 公司)</span>
           <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0">下載範例</button>
         </div>
 
@@ -256,8 +276,26 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
+    // 倉管標準儲存地點清單
+    const STORAGE_LOCATIONS = [
+      "1F成品區",
+      "1F冷倉",
+      "1F冷倉(外)(A區)",
+      "1F倉庫(前)",
+      "1F原料區",
+      "2F冷倉(F區)",
+      "2F倉庫(前)(E區)",
+      "2F倉庫(後)(H區)",
+      "30號1F",
+      "30號2F",
+      "其他"
+    ];
+
     // 全局變數
     let inventoryData = [];
+    let currentPageItems = [];
+    let currentPage = 1;
+    let pageSize = 20; // 預設每頁 20 筆
     let personnelList = [
       { name: "張品管", role: "qc" },
       { name: "李倉管", role: "warehouse" },
@@ -344,7 +382,6 @@
 
       if (person) {
         if (person.role === 'admin' && !isAdminVerified) {
-          // 若重新整理前停留在管理員帳號，為確保安全先切回第一位非管理員人員（需重新點選並輸入密碼才解鎖）
           const nonAdmin = personnelList.find(p => p.role !== 'admin');
           if (isInitial && nonAdmin) {
             selectedAuditor = nonAdmin.name;
@@ -385,7 +422,6 @@
           localStorage.setItem('qc_selected_auditor', selectedAuditor);
         }
       } else {
-        // 切換至一般人員：取消管理員解鎖狀態，並強制切換至該人員對應的頁面
         isAdminVerified = false;
         selectedAuditor = targetPerson.name;
         currentRole = targetPerson.role;
@@ -421,17 +457,14 @@
       const body = document.getElementById('appBody');
       const roleSelect = document.getElementById('roleSelect');
 
-      // 判斷當前操作人員是否為已驗證的管理員
       const activePerson = personnelList.find(p => p.name === selectedAuditor);
       const canSwitchAll = activePerson && activePerson.role === 'admin' && isAdminVerified;
 
-      // 依操作人員權限鎖定或開放右上角選項
       roleSelect.value = currentRole;
       Array.from(roleSelect.options).forEach(opt => {
         opt.disabled = canSwitchAll ? false : (opt.value !== currentRole);
       });
 
-      // 清除舊背景色類別
       header.classList.remove('bg-indigo-900', 'bg-emerald-900', 'bg-amber-900', 'bg-purple-950');
       body.classList.remove('bg-slate-100', 'bg-emerald-50/50', 'bg-amber-50/40', 'bg-purple-50/40');
 
@@ -564,6 +597,33 @@
       }
     }
 
+    // 分頁與篩選控制函式
+    function handleFilterChange() {
+      currentPage = 1;
+      isAllExpanded = false;
+      document.getElementById('expandAllBtnText').innerText = '展開本頁';
+      document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-down';
+      renderItemList();
+    }
+
+    function handlePageSizeChange(val) {
+      pageSize = val === 'all' ? 'all' : parseInt(val, 10);
+      currentPage = 1;
+      isAllExpanded = false;
+      document.getElementById('expandAllBtnText').innerText = '展開本頁';
+      document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-down';
+      renderItemList();
+    }
+
+    function changePage(newPage) {
+      currentPage = newPage;
+      isAllExpanded = false;
+      document.getElementById('expandAllBtnText').innerText = '展開本頁';
+      document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-down';
+      renderItemList();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
     function toggleCardExpand(id) {
       if (expandedItemIds.has(id)) expandedItemIds.delete(id);
       else expandedItemIds.add(id);
@@ -573,20 +633,36 @@
     function toggleExpandAll() {
       isAllExpanded = !isAllExpanded;
       if (isAllExpanded) {
-        inventoryData.forEach(item => expandedItemIds.add(item.id));
-        document.getElementById('expandAllBtnText').innerText = '收合全部';
+        currentPageItems.forEach(item => expandedItemIds.add(item.id));
+        document.getElementById('expandAllBtnText').innerText = '收合本頁';
         document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-up';
       } else {
-        expandedItemIds.clear();
-        document.getElementById('expandAllBtnText').innerText = '展開全部';
+        currentPageItems.forEach(item => expandedItemIds.delete(item.id));
+        document.getElementById('expandAllBtnText').innerText = '展開本頁';
         document.getElementById('expandAllIcon').className = 'fa-solid fa-angles-down';
       }
       renderItemList();
     }
 
+    // 渲染倉管儲存地點下拉選項
+    function renderLocationOptions(currentLoc) {
+      const val = (currentLoc || '').trim();
+      let html = '';
+      if (!val) {
+        html += `<option value="" selected>-- 請選擇儲存地點 --</option>`;
+      } else if (!STORAGE_LOCATIONS.includes(val)) {
+        html += `<option value="${val}" selected>${val} (原匯入儲位)</option>`;
+      }
+      html += STORAGE_LOCATIONS.map(loc => 
+        `<option value="${loc}" ${val === loc ? 'selected' : ''}>${loc}</option>`
+      ).join('');
+      return html;
+    }
+
     function renderItemList() {
       const listEl = document.getElementById('itemList');
       const emptyEl = document.getElementById('emptyState');
+      const paginationEl = document.getElementById('paginationControls');
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const filter = document.getElementById('statusFilter').value;
       const companyFilter = document.getElementById('companyFilter').value;
@@ -610,16 +686,49 @@
       });
 
       if (inventoryData.length === 0 || filtered.length === 0) {
+        currentPageItems = [];
         listEl.innerHTML = '';
         emptyEl.classList.remove('hidden');
+        paginationEl.classList.add('hidden');
+        document.getElementById('selectAllCheckbox').checked = false;
         updateDashboard();
         return;
       }
 
       emptyEl.classList.add('hidden');
+      paginationEl.classList.remove('hidden');
+
+      // 計算分頁範圍
+      const totalFiltered = filtered.length;
+      let totalPages = 1;
+      let startIndex = 0;
+      let endIndex = totalFiltered;
+
+      if (pageSize !== 'all') {
+        totalPages = Math.max(1, Math.ceil(totalFiltered / pageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
+        startIndex = (currentPage - 1) * pageSize;
+        endIndex = Math.min(startIndex + pageSize, totalFiltered);
+        currentPageItems = filtered.slice(startIndex, endIndex);
+      } else {
+        currentPage = 1;
+        currentPageItems = filtered;
+      }
+
+      // 更新分頁按鈕與頁碼資訊
+      document.getElementById('paginationInfo').innerText = `顯示第 ${startIndex + 1} - ${endIndex} 筆，共 ${totalFiltered} 筆`;
+      document.getElementById('pageIndicator').innerText = `第 ${currentPage} / ${totalPages} 頁`;
+      document.getElementById('prevPageBtn').disabled = (pageSize === 'all' || currentPage <= 1);
+      document.getElementById('nextPageBtn').disabled = (pageSize === 'all' || currentPage >= totalPages);
+
+      // 同步「全選本頁品項」勾選框狀態
+      const allPageSelected = currentPageItems.length > 0 && currentPageItems.every(item => selectedItemIds.has(item.id));
+      document.getElementById('selectAllCheckbox').checked = allPageSelected;
+
       const todayStr = new Date().toISOString().slice(0, 10);
 
-      listEl.innerHTML = filtered.map(item => {
+      listEl.innerHTML = currentPageItems.map(item => {
         const isAudited = item.audited;
         const isAbnormal = isAudited && item.condition === 'abnormal';
         const isChecked = selectedItemIds.has(item.id);
@@ -649,11 +758,11 @@
                       </div>
                     </div>
 
-                    <!-- 2. 儲位標籤 + 小黑框提示 -->
+                    <!-- 2. 儲存地點標籤 + 小黑框提示 -->
                     <div class="relative group inline-block">
-                      <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer">${item.location}</span>
+                      <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
-                        儲位編號
+                        儲存地點
                       </div>
                     </div>
 
@@ -704,6 +813,14 @@
             ${isExpanded ? `
               <div class="pt-3 mt-2 border-t border-slate-100 space-y-3">
                 
+                <!-- 倉管儲存地點下拉選單 -->
+                <div>
+                  <label class="block text-[11px] font-bold text-slate-500 mb-0.5"><i class="fa-solid fa-warehouse text-emerald-600 mr-1"></i>儲存地點 (倉管/品管)：</label>
+                  <select ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500">
+                    ${renderLocationOptions(item.location)}
+                  </select>
+                </div>
+
                 <div class="grid grid-cols-2 gap-2">
                   <div>
                     <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 (倉管/品管)：</label>
@@ -948,20 +1065,23 @@
     function deleteSingleItem(id) {
       if (currentRole !== 'admin') { alert('只有管理員可以刪除品項'); return; }
       if (!confirm('確定要徹底刪除此筆品項嗎？')) return;
+      selectedItemIds.delete(id);
       db.ref(`inventory_items/${id}`).remove();
     }
 
     function toggleItemSelect(id, checked) {
       if (checked) selectedItemIds.add(id);
       else selectedItemIds.delete(id);
+      const allPageSelected = currentPageItems.length > 0 && currentPageItems.every(item => selectedItemIds.has(item.id));
+      document.getElementById('selectAllCheckbox').checked = allPageSelected;
       updateBatchDeleteBtn();
     }
 
     function toggleSelectAll(checkbox) {
       if (checkbox.checked) {
-        inventoryData.forEach(item => selectedItemIds.add(item.id));
+        currentPageItems.forEach(item => selectedItemIds.add(item.id));
       } else {
-        selectedItemIds.clear();
+        currentPageItems.forEach(item => selectedItemIds.delete(item.id));
       }
       renderItemList();
       updateBatchDeleteBtn();
@@ -993,6 +1113,7 @@
       if (confirm('【危險動作】確定要清空雲端資料庫中「所有」品項資料嗎？此動作無法復原！')) {
         db.ref('inventory_items').remove();
         selectedItemIds.clear();
+        updateBatchDeleteBtn();
       }
     }
 
@@ -1081,7 +1202,7 @@
       let skuIdx = headers.findIndex(h => h.includes('sku') || h.includes('編號') || h.includes('料號'));
       let nameIdx = headers.findIndex(h => h.includes('品名') || h.includes('名稱'));
       let catIdx = headers.findIndex(h => h.includes('類別') || h.includes('分類'));
-      let locIdx = headers.findIndex(h => h.includes('儲位') || h.includes('位置') || h.includes('庫位'));
+      let locIdx = headers.findIndex(h => h.includes('儲位') || h.includes('地點') || h.includes('位置') || h.includes('庫位'));
       let qtyIdx = headers.findIndex(h => h.includes('帳面') || h.includes('數量') || h.includes('庫存'));
       let unitIdx = headers.findIndex(h => h.includes('單位'));
       let batchIdx = headers.findIndex(h => h.includes('批號') || h.includes('批次'));
@@ -1128,7 +1249,7 @@
           sku: skuVal,
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
-          location: String(row[locIdx] || 'A-01').trim(),
+          location: String(row[locIdx] || '').trim(),
           company: compVal,
           systemQty: parsedQty,
           actualQty: parsedQty,
@@ -1186,7 +1307,7 @@
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,所屬公司,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲存地點,所屬公司,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
       inventoryData.forEach(item => {
         const diff = (item.actualQty ?? item.systemQty) - item.systemQty;
         csv += [
@@ -1224,9 +1345,9 @@
     }
 
     function downloadSampleCSV() {
-      let csv = '\uFEFFSKU編號,品名,類別,儲位,帳面數量,單位,產品批號,有效日期,所屬公司\n';
-      csv += '0012001,乙基麥芽酚,原料,81,679.95,KG,201410,2027-08-08,總公司\n';
-      csv += '0012002,KLEEZ 乙基麥芽酚,原料,81,111,KG,201410,2027-08-08,分公司A\n';
+      let csv = '\uFEFFSKU編號,品名,類別,儲存地點,帳面數量,單位,產品批號,有效日期,所屬公司\n';
+      csv += '0012001,乙基麥芽酚,原料,1F原料區,679.95,KG,201410,2027-08-08,總公司\n';
+      csv += '0012002,KLEEZ 乙基麥芽酚,原料,1F冷倉,111,KG,201410,2027-08-08,分公司A\n';
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
