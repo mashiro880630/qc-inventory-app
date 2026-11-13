@@ -82,65 +82,24 @@
       </div>
     </div>
 
-    <!-- 儀表板 Dashboard (階段統計與品質/盤差分離統計) -->
-    <div class="space-y-2 mb-3">
-      <!-- 第一排：作業階段統計 -->
-      <div class="grid grid-cols-4 gap-2 text-center">
-        <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
-          <div class="text-xs text-slate-500">總品項</div>
-          <div id="statTotal" class="text-lg font-black text-slate-800">0</div>
-        </div>
-        <div class="bg-white p-2.5 rounded-xl border border-teal-200 shadow-sm bg-teal-50/30">
-          <div class="text-xs text-teal-700 font-semibold">已初盤</div>
-          <div id="statWarehouseDone" class="text-lg font-black text-teal-600">0</div>
-        </div>
-        <div class="bg-white p-2.5 rounded-xl border border-indigo-200 shadow-sm bg-indigo-50/30">
-          <div class="text-xs text-indigo-700 font-semibold">已檢查</div>
-          <div id="statQcDone" class="text-lg font-black text-indigo-600">0</div>
-        </div>
-        <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/40">
-          <div class="text-xs text-amber-800 font-semibold">已盤點</div>
-          <div id="statBuyerLocked" class="text-lg font-black text-amber-600">0</div>
-        </div>
-      </div>
+    <!-- 動態儀表板 Dashboard (依不同部門權限顯示專屬統計數據) -->
+    <div id="dashboardContainer" class="mb-3"></div>
 
-      <!-- 第二排：品質與盤差獨立統計 -->
-      <div class="grid grid-cols-3 gap-2 text-center">
-        <div class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/30">
-          <div class="text-xs text-emerald-600 font-semibold">正常</div>
-          <div id="statNormal" class="text-base font-black text-emerald-600">0</div>
-        </div>
-        <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm bg-rose-50/30">
-          <div class="text-xs text-rose-600 font-semibold">異常 (品管)</div>
-          <div id="statAbnormal" class="text-base font-black text-rose-600">0</div>
-        </div>
-        <div class="bg-white p-2 rounded-xl border border-orange-200 shadow-sm bg-orange-50/30">
-          <div class="text-xs text-orange-700 font-semibold">盤差 (採購)</div>
-          <div id="statDiscrepancy" class="text-base font-black text-orange-600">0</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 進度條 (以採購已鎖定之「已盤點」為主) -->
-    <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3">
-      <div class="flex justify-between items-center text-xs text-slate-600 font-semibold mb-1">
-        <span>整體盤點進度 <span class="text-[11px] text-slate-400 font-normal">(採購已鎖定確認)</span></span>
-        <span id="progressPercent" class="text-amber-700 font-bold">0%</span>
-      </div>
-      <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-        <div id="progressBar" class="bg-amber-500 h-2.5 rounded-full transition-all duration-300" style="width: 0%"></div>
-      </div>
-    </div>
+    <!-- 動態進度條 (依不同部門權限分開計算進度) -->
+    <div id="progressContainer" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3"></div>
 
     <!-- 搜尋與篩選工具列 -->
     <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3 space-y-2">
       <div class="flex flex-wrap gap-2">
         <div class="relative flex-1 min-w-[160px]">
           <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
-          <input type="text" id="searchInput" oninput="handleFilterChange()" placeholder="搜尋 SKU、品名、批號、儲存地點或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          <input type="text" id="searchInput" oninput="handleFilterChange()" placeholder="搜尋 SKU、品名、類別、批號、地點或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
         </div>
         <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
           <option value="all">全部公司</option>
+        </select>
+        <select id="categoryFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <option value="all">全部類別</option>
         </select>
         <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
           <option value="all">全部狀態</option>
@@ -153,7 +112,10 @@
         </select>
       </div>
 
-      <div class="flex justify-between items-center pt-1 border-t border-slate-100 text-xs">
+      <!-- 公司色標對照列 (有公司資料時自動顯示) -->
+      <div id="companyColorLegend" class="hidden flex flex-wrap items-center gap-2 pt-1.5 border-t border-slate-100 text-[11px]"></div>
+
+      <div class="flex justify-between items-center pt-1.5 border-t border-slate-100 text-xs">
         <div class="flex items-center gap-2">
           <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
           <label for="selectAllCheckbox" class="text-slate-600">全選本頁品項</label>
@@ -234,7 +196,7 @@
       
       <div class="space-y-3">
         <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center gap-2">
-          <span>1. 下載標準範例檔 (SKU, 品名, 類別, 儲存地點, 帳面量, 單位, 批號, 有效日期, 公司)</span>
+          <span>1. 下載標準範例檔 (SKU, 品名, 類別[原料/包材], 儲存地點, 帳面量, 單位, 批號, 有效日期, 公司)</span>
           <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0">下載範例</button>
         </div>
 
@@ -261,7 +223,7 @@
           <div class="max-h-36 overflow-y-auto border rounded-lg text-[11px]">
             <table class="w-full text-left">
               <thead class="bg-slate-100 sticky top-0 text-slate-600">
-                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">批號</th><th class="p-1.5">有效日期</th><th class="p-1.5">公司</th></tr>
+                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">類別</th><th class="p-1.5">批號</th><th class="p-1.5">公司</th></tr>
               </thead>
               <tbody id="importPreviewTable"></tbody>
             </table>
@@ -306,8 +268,68 @@
       "其他"
     ];
 
+    // 公司別專屬視覺色彩主題池 (左側粗邊框 + 卡片底色 + 公司標籤色彩)
+    const COMPANY_COLOR_PALETTE = [
+      {
+        cardBorder: 'border-l-[6px] border-l-sky-500',
+        cardBg: 'bg-sky-50/45',
+        badge: 'bg-sky-100 text-sky-800 border-sky-300',
+        dot: 'bg-sky-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-violet-500',
+        cardBg: 'bg-violet-50/45',
+        badge: 'bg-violet-100 text-violet-800 border-violet-300',
+        dot: 'bg-violet-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-amber-500',
+        cardBg: 'bg-amber-50/45',
+        badge: 'bg-amber-100 text-amber-800 border-amber-300',
+        dot: 'bg-amber-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-emerald-500',
+        cardBg: 'bg-emerald-50/45',
+        badge: 'bg-emerald-100 text-emerald-800 border-emerald-300',
+        dot: 'bg-emerald-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-rose-500',
+        cardBg: 'bg-rose-50/45',
+        badge: 'bg-rose-100 text-rose-800 border-rose-300',
+        dot: 'bg-rose-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-cyan-500',
+        cardBg: 'bg-cyan-50/45',
+        badge: 'bg-cyan-100 text-cyan-800 border-cyan-300',
+        dot: 'bg-cyan-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-orange-500',
+        cardBg: 'bg-orange-50/45',
+        badge: 'bg-orange-100 text-orange-800 border-orange-300',
+        dot: 'bg-orange-500'
+      },
+      {
+        cardBorder: 'border-l-[6px] border-l-indigo-500',
+        cardBg: 'bg-indigo-50/45',
+        badge: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+        dot: 'bg-indigo-500'
+      }
+    ];
+
+    const DEFAULT_COMPANY_THEME = {
+      cardBorder: 'border-l-[6px] border-l-slate-300',
+      cardBg: 'bg-white',
+      badge: 'bg-slate-100 text-slate-700 border-slate-300',
+      dot: 'bg-slate-400'
+    };
+
     // 全局變數
     let inventoryData = [];
+    let companyColorMap = {};
     let currentPageItems = [];
     let currentPage = 1;
     let pageSize = 20; // 預設每頁 20 筆
@@ -360,6 +382,42 @@
       return round4((actualQty ?? systemQty ?? 0) - (systemQty ?? 0));
     }
 
+    // 取得公司對應色彩主題
+    function getCompanyTheme(companyName) {
+      const key = (companyName || '').trim();
+      if (!key) return DEFAULT_COMPANY_THEME;
+      return companyColorMap[key] || DEFAULT_COMPANY_THEME;
+    }
+
+    // 產生「原料 / 包材」類別小卡 HTML
+    function getCategoryBadgeHtml(category) {
+      const cat = (category || '').trim();
+      if (!cat) return '';
+
+      let badgeStyle = 'bg-cyan-100 text-cyan-800 border-cyan-300';
+      let iconClass = 'fa-tag';
+
+      if (cat.includes('原料')) {
+        badgeStyle = 'bg-lime-100 text-lime-800 border-lime-300';
+        iconClass = 'fa-seedling';
+      } else if (cat.includes('包材')) {
+        badgeStyle = 'bg-fuchsia-100 text-fuchsia-800 border-fuchsia-300';
+        iconClass = 'fa-box';
+      } else if (cat.includes('成品')) {
+        badgeStyle = 'bg-blue-100 text-blue-800 border-blue-300';
+        iconClass = 'fa-cubes';
+      }
+
+      return `
+        <div class="relative group inline-block">
+          <span class="text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold cursor-pointer"><i class="fa-solid ${iconClass} mr-1"></i>${cat}</span>
+          <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+            物料類別 (${cat})
+          </div>
+        </div>
+      `;
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       loadLocalAuditor();
       renderAuditorOptions();
@@ -395,7 +453,8 @@
           inventoryData = [];
         }
         document.getElementById('savedTimeNotice').innerText = '已同步：' + new Date().toLocaleTimeString('zh-TW');
-        updateCompanyFilterOptions();
+        updateCompanyFilterAndColors();
+        updateCategoryFilterOptions();
         renderItemList();
       }, (error) => {
         console.error("Firebase 連線錯誤:", error);
@@ -573,8 +632,9 @@
         opt.disabled = canSwitchAll ? false : (opt.value !== currentRole);
       });
 
-      // 更新對應角色的狀態篩選選單
+      // 更新對應角色的狀態篩選選單與儀表板
       updateStatusFilterOptions();
+      updateDashboard();
 
       header.classList.remove('bg-indigo-900', 'bg-emerald-900', 'bg-amber-900', 'bg-purple-950');
       body.classList.remove('bg-slate-100', 'bg-emerald-50/50', 'bg-amber-50/40', 'bg-purple-50/40');
@@ -691,17 +751,71 @@
       renderPersonnelList();
     }
 
-    // 動態更新「公司別」篩選選單
-    function updateCompanyFilterOptions() {
+    // 動態更新「公司別」篩選選單、專屬色彩對照表與上方色標圖例
+    function updateCompanyFilterAndColors() {
       const select = document.getElementById('companyFilter');
+      const legendEl = document.getElementById('companyColorLegend');
       if (!select) return;
+
       const currentVal = select.value;
-      const companies = [...new Set(inventoryData.map(i => (i.company || '').trim()).filter(Boolean))];
-      
+      const companies = [...new Set(inventoryData.map(i => (i.company || '').trim()).filter(Boolean))].sort();
+
+      companyColorMap = {};
+      companies.forEach((comp, idx) => {
+        companyColorMap[comp] = COMPANY_COLOR_PALETTE[idx % COMPANY_COLOR_PALETTE.length];
+      });
+
       select.innerHTML = `<option value="all">全部公司</option>` + 
         companies.map(c => `<option value="${c}">${c}</option>`).join('');
       
       if (companies.includes(currentVal)) {
+        select.value = currentVal;
+      } else {
+        select.value = 'all';
+      }
+
+      // 更新公司色標圖例列
+      if (legendEl) {
+        if (companies.length > 0) {
+          legendEl.classList.remove('hidden');
+          legendEl.innerHTML = `<span class="text-slate-500 font-bold"><i class="fa-solid fa-palette mr-1"></i>公司色標：</span>` +
+            companies.map(comp => {
+              const theme = getCompanyTheme(comp);
+              return `
+                <button onclick="quickFilterCompany('${comp.replace(/'/g, "\\'")}')" class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border ${theme.badge} font-semibold hover:opacity-80 transition">
+                  <span class="w-2 h-2 rounded-full ${theme.dot}"></span>
+                  <span>${comp}</span>
+                </button>
+              `;
+            }).join('') +
+            (select.value !== 'all' ? `<button onclick="quickFilterCompany('all')" class="text-slate-500 underline ml-1 hover:text-slate-800">顯示全部</button>` : '');
+        } else {
+          legendEl.classList.add('hidden');
+          legendEl.innerHTML = '';
+        }
+      }
+    }
+
+    // 點擊公司色標快速篩選
+    function quickFilterCompany(compVal) {
+      const select = document.getElementById('companyFilter');
+      if (!select) return;
+      select.value = (select.value === compVal && compVal !== 'all') ? 'all' : compVal;
+      updateCompanyFilterAndColors();
+      handleFilterChange();
+    }
+
+    // 動態更新「物料類別 (原料/包材)」篩選選單
+    function updateCategoryFilterOptions() {
+      const select = document.getElementById('categoryFilter');
+      if (!select) return;
+      const currentVal = select.value;
+      const categories = [...new Set(inventoryData.map(i => (i.category || '').trim()).filter(Boolean))];
+
+      select.innerHTML = `<option value="all">全部類別</option>` +
+        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+
+      if (categories.includes(currentVal)) {
         select.value = currentVal;
       } else {
         select.value = 'all';
@@ -775,15 +889,18 @@
       const search = document.getElementById('searchInput').value.toLowerCase().trim();
       const filter = document.getElementById('statusFilter').value;
       const companyFilter = document.getElementById('companyFilter').value;
+      const categoryFilter = document.getElementById('categoryFilter').value;
 
       const filtered = inventoryData.filter(item => {
         const matchesSearch = (item.sku || '').toLowerCase().includes(search) || 
                               (item.name || '').toLowerCase().includes(search) || 
+                              (item.category || '').toLowerCase().includes(search) || 
                               (item.batchNo || '').toLowerCase().includes(search) || 
                               (item.location || '').toLowerCase().includes(search) ||
                               (item.looseLocation || '').toLowerCase().includes(search) ||
                               (item.company || '').toLowerCase().includes(search);
         const matchesCompany = (companyFilter === 'all') || ((item.company || '') === companyFilter);
+        const matchesCategory = (categoryFilter === 'all') || ((item.category || '') === categoryFilter);
         let matchesStatus = true;
         const totalActual = getTotalActualQty(item);
         const diff = calcDiscrepancy(totalActual, item.systemQty);
@@ -796,7 +913,7 @@
         else if (filter === 'locked_buyer') matchesStatus = !!item.lockedByBuyer;
         else if (filter === 'discrepancy') matchesStatus = hasDiscrepancy;
         
-        return matchesSearch && matchesCompany && matchesStatus;
+        return matchesSearch && matchesCompany && matchesCategory && matchesStatus;
       });
 
       if (inventoryData.length === 0 || filtered.length === 0) {
@@ -857,13 +974,18 @@
         const hasDiscrepancy = (diff !== 0);
         const hasLooseInfo = looseQty > 0 || Boolean((item.looseLocation || '').trim());
 
+        // 公司專屬視覺色彩
+        const companyTheme = getCompanyTheme(item.company);
+        const cardOuterBorder = isAbnormal ? 'border-rose-300' : hasDiscrepancy ? 'border-amber-300' : 'border-slate-200';
+        const cardBgClass = isAbnormal ? 'bg-rose-50/40' : companyTheme.cardBg;
+
         // 權限控管：只有倉管與管理員在未鎖定時可修改物流與數量欄位（品管與採購僅可唯讀檢視）
         const canEditWarehouse = (currentRole === 'warehouse' || currentRole === 'admin') && !isGlobalLocked && !item.lockedByBuyer;
         const isQcLocked = isGlobalLocked;
         const isBuyerLocked = isGlobalLocked;
 
         return `
-          <div class="bg-white rounded-xl shadow-sm border ${isAbnormal ? 'border-rose-300 bg-rose-50/20' : hasDiscrepancy ? 'border-amber-300 bg-amber-50/20' : item.lockedByBuyer ? 'border-amber-300' : isAudited ? 'border-emerald-200' : 'border-slate-200'} p-3 transition">
+          <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
             
             <!-- 卡片頂部標頭 (包含 Tailwind 漂浮小黑框提示) -->
             <div class="flex items-center justify-between gap-2">
@@ -872,18 +994,31 @@
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center gap-1.5 flex-wrap">
                     
-                    <!-- 1. SKU 標籤 + 小黑框提示 -->
+                    <!-- 1. 公司標籤 (與卡片左側色條同色系) -->
+                    ${item.company ? `
+                      <div class="relative group inline-block">
+                        <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold cursor-pointer"><i class="fa-solid fa-building mr-1"></i>${item.company}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          所屬公司
+                        </div>
+                      </div>
+                    ` : ''}
+
+                    <!-- 2. SKU 標籤 -->
                     <div class="relative group inline-block">
-                      <span class="font-mono text-xs font-bold text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded cursor-pointer">${item.sku}</span>
+                      <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded cursor-pointer">${item.sku}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                         SKU 料號
                       </div>
                     </div>
 
-                    <!-- 2. 儲存地點標籤 -->
+                    <!-- 3. 物料類別小卡 (原料 / 包材) -->
+                    ${getCategoryBadgeHtml(item.category)}
+
+                    <!-- 4. 儲存地點標籤 -->
                     ${hasLooseInfo ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${item.location || '未指定'}</span>
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${item.location || '未指定'}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
@@ -896,44 +1031,34 @@
                       </div>
                     ` : `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
                       </div>
                     `}
 
-                    <!-- 3. 批號標籤 + 小黑框提示 -->
+                    <!-- 5. 批號標籤 -->
                     ${item.batchNo ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
+                        <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           產品批號
                         </div>
                       </div>
                     ` : ''}
 
-                    <!-- 4. 公司標籤 + 小黑框提示 -->
-                    ${item.company ? `
-                      <div class="relative group inline-block">
-                        <span class="text-xs bg-sky-50 text-sky-700 border border-sky-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-building mr-1"></i>${item.company}</span>
-                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
-                          所屬公司
-                        </div>
-                      </div>
-                    ` : ''}
-
                     ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
-                    ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
                   </div>
-                  <h2 class="font-bold text-sm text-slate-800 mt-0.5 truncate">${item.name}</h2>
+                  <h2 class="font-bold text-sm text-slate-800 mt-1 truncate">${item.name}</h2>
                 </div>
               </div>
 
               <!-- 右側階段狀態標籤群組 -->
               <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
                 <!-- 倉管初盤狀態 -->
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-slate-100 text-slate-500'}">
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/80 border border-slate-200 text-slate-500'}">
                   ${isWarehouseDone ? '<i class="fa-solid fa-check mr-0.5"></i>已初盤' : '待初盤'}
                 </span>
 
@@ -942,9 +1067,9 @@
                   ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
                       <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-0.5"></i>${isAbnormal ? '異常' : '正常'}
                      </span>` 
-                  : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-slate-100 text-slate-500">待檢查</span>`}
+                  : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/80 border border-slate-200 text-slate-500">待檢查</span>`}
 
-                <button onclick="toggleCardExpand('${item.id}')" class="text-slate-400 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
+                <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
                   <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
                 </button>
                 ${currentRole === 'admin' ? `
@@ -956,7 +1081,7 @@
             </div>
 
             ${isExpanded ? `
-              <div class="pt-3 mt-2 border-t border-slate-100 space-y-3">
+              <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/80 rounded-lg p-2.5">
                 
                 <!-- 倉管雙儲存地點下拉選單 (品管與採購模式為唯讀檢視) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1038,7 +1163,7 @@
 
                 <!-- 採購覆核與鎖定控制 -->
                 ${(currentRole === 'buyer' || currentRole === 'admin') ? `
-                  <div class="bg-amber-50/60 border border-amber-200 p-2.5 rounded-lg text-xs space-y-2">
+                  <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-lg text-xs space-y-2">
                     <div class="flex items-center justify-between">
                       <span class="font-bold text-amber-900"><i class="fa-solid fa-cart-shopping mr-1"></i> 採購覆核與盤點鎖定：</span>
                       <button onclick="toggleBuyerLock('${item.id}')" ${isBuyerLocked ? 'disabled' : ''} class="px-2.5 py-1 rounded text-xs font-bold ${item.lockedByBuyer ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'} shadow-sm transition">
@@ -1370,26 +1495,167 @@
       }
     }
 
-    // 更新儀表板與進度條 (已盤點 = 採購已鎖定；異常與盤差獨立統計)
+    // 依不同部門權限動態渲染專屬統計卡片與獨立進度條
     function updateDashboard() {
+      const dashEl = document.getElementById('dashboardContainer');
+      const progEl = document.getElementById('progressContainer');
+      if (!dashEl || !progEl) return;
+
       const total = inventoryData.length;
       const warehouseDone = inventoryData.filter(i => !!i.warehouseCompleted).length;
+      const warehousePending = total - warehouseDone;
       const qcDone = inventoryData.filter(i => !!i.audited).length;
-      const buyerLocked = inventoryData.filter(i => !!i.lockedByBuyer).length;
+      const qcPending = total - qcDone;
       const normal = inventoryData.filter(i => !!i.audited && i.condition === 'normal').length;
       const abnormal = inventoryData.filter(i => !!i.audited && i.condition === 'abnormal').length;
+      const buyerLocked = inventoryData.filter(i => !!i.lockedByBuyer).length;
+      const buyerPending = total - buyerLocked;
       const discrepancy = inventoryData.filter(i => calcDiscrepancy(getTotalActualQty(i), i.systemQty) !== 0).length;
-      const percent = total > 0 ? Math.round((buyerLocked / total) * 100) : 0;
 
-      document.getElementById('statTotal').innerText = total;
-      document.getElementById('statWarehouseDone').innerText = warehouseDone;
-      document.getElementById('statQcDone').innerText = qcDone;
-      document.getElementById('statBuyerLocked').innerText = buyerLocked;
-      document.getElementById('statNormal').innerText = normal;
-      document.getElementById('statAbnormal').innerText = abnormal;
-      document.getElementById('statDiscrepancy').innerText = discrepancy;
-      document.getElementById('progressPercent').innerText = percent + '%';
-      document.getElementById('progressBar').style.width = percent + '%';
+      let dashHtml = '';
+      let progTitle = '';
+      let progSub = '';
+      let percent = 0;
+      let barColor = 'bg-indigo-600';
+      let textColor = 'text-indigo-700';
+
+      if (currentRole === 'warehouse') {
+        percent = total > 0 ? Math.round((warehouseDone / total) * 100) : 0;
+        progTitle = '倉管初盤進度';
+        progSub = `(已初盤 ${warehouseDone} / ${total} 筆)`;
+        barColor = 'bg-emerald-600';
+        textColor = 'text-emerald-700';
+
+        dashHtml = `
+          <div class="grid grid-cols-3 gap-2 text-center">
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-xs text-slate-500">總品項</div>
+              <div class="text-lg font-black text-slate-800">${total}</div>
+            </div>
+            <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/30">
+              <div class="text-xs text-amber-700 font-semibold">待初盤</div>
+              <div class="text-lg font-black text-amber-600">${warehousePending}</div>
+            </div>
+            <div class="bg-white p-2.5 rounded-xl border border-teal-200 shadow-sm bg-teal-50/40">
+              <div class="text-xs text-teal-700 font-semibold">已初盤</div>
+              <div class="text-lg font-black text-teal-600">${warehouseDone}</div>
+            </div>
+          </div>
+        `;
+      } else if (currentRole === 'qc') {
+        percent = total > 0 ? Math.round((qcDone / total) * 100) : 0;
+        progTitle = '品管檢查進度';
+        progSub = `(已檢查 ${qcDone} / ${total} 筆)`;
+        barColor = 'bg-indigo-600';
+        textColor = 'text-indigo-700';
+
+        dashHtml = `
+          <div class="grid grid-cols-5 gap-1.5 sm:gap-2 text-center">
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-[11px] sm:text-xs text-slate-500">總品項</div>
+              <div class="text-base sm:text-lg font-black text-slate-800">${total}</div>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm bg-slate-50/60">
+              <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">待檢查</div>
+              <div class="text-base sm:text-lg font-black text-slate-600">${qcPending}</div>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-indigo-200 shadow-sm bg-indigo-50/40">
+              <div class="text-[11px] sm:text-xs text-indigo-700 font-semibold">已檢查</div>
+              <div class="text-base sm:text-lg font-black text-indigo-600">${qcDone}</div>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/40">
+              <div class="text-[11px] sm:text-xs text-emerald-700 font-semibold">正常</div>
+              <div class="text-base sm:text-lg font-black text-emerald-600">${normal}</div>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm bg-rose-50/40">
+              <div class="text-[11px] sm:text-xs text-rose-700 font-semibold">異常</div>
+              <div class="text-base sm:text-lg font-black text-rose-600">${abnormal}</div>
+            </div>
+          </div>
+        `;
+      } else if (currentRole === 'buyer') {
+        percent = total > 0 ? Math.round((buyerLocked / total) * 100) : 0;
+        progTitle = '採購覆核進度';
+        progSub = `(已鎖定確認 ${buyerLocked} / ${total} 筆)`;
+        barColor = 'bg-amber-500';
+        textColor = 'text-amber-700';
+
+        dashHtml = `
+          <div class="grid grid-cols-4 gap-2 text-center">
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="text-xs text-slate-500">總品項</div>
+              <div class="text-lg font-black text-slate-800">${total}</div>
+            </div>
+            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm bg-slate-50/60">
+              <div class="text-xs text-slate-600 font-semibold">待鎖定</div>
+              <div class="text-lg font-black text-slate-600">${buyerPending}</div>
+            </div>
+            <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/40">
+              <div class="text-xs text-amber-800 font-semibold">已盤點(鎖定)</div>
+              <div class="text-lg font-black text-amber-600">${buyerLocked}</div>
+            </div>
+            <div class="bg-white p-2.5 rounded-xl border border-orange-200 shadow-sm bg-orange-50/40">
+              <div class="text-xs text-orange-700 font-semibold">有盤差</div>
+              <div class="text-lg font-black text-orange-600">${discrepancy}</div>
+            </div>
+          </div>
+        `;
+      } else {
+        // Admin 全權限總覽
+        percent = total > 0 ? Math.round((buyerLocked / total) * 100) : 0;
+        progTitle = '整體盤點進度';
+        progSub = `(採購已鎖定確認 ${buyerLocked} / ${total} 筆)`;
+        barColor = 'bg-purple-600';
+        textColor = 'text-purple-700';
+
+        dashHtml = `
+          <div class="space-y-2">
+            <div class="grid grid-cols-4 gap-2 text-center">
+              <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+                <div class="text-xs text-slate-500">總品項</div>
+                <div class="text-lg font-black text-slate-800">${total}</div>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-teal-200 shadow-sm bg-teal-50/30">
+                <div class="text-xs text-teal-700 font-semibold">已初盤</div>
+                <div class="text-lg font-black text-teal-600">${warehouseDone}</div>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-indigo-200 shadow-sm bg-indigo-50/30">
+                <div class="text-xs text-indigo-700 font-semibold">已檢查</div>
+                <div class="text-lg font-black text-indigo-600">${qcDone}</div>
+              </div>
+              <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/40">
+                <div class="text-xs text-amber-800 font-semibold">已盤點</div>
+                <div class="text-lg font-black text-amber-600">${buyerLocked}</div>
+              </div>
+            </div>
+            <div class="grid grid-cols-3 gap-2 text-center">
+              <div class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/30">
+                <div class="text-xs text-emerald-600 font-semibold">正常</div>
+                <div class="text-base font-black text-emerald-600">${normal}</div>
+              </div>
+              <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm bg-rose-50/30">
+                <div class="text-xs text-rose-600 font-semibold">異常 (品管)</div>
+                <div class="text-base font-black text-rose-600">${abnormal}</div>
+              </div>
+              <div class="bg-white p-2 rounded-xl border border-orange-200 shadow-sm bg-orange-50/30">
+                <div class="text-xs text-orange-700 font-semibold">盤差 (採購)</div>
+                <div class="text-base font-black text-orange-600">${discrepancy}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      dashEl.innerHTML = dashHtml;
+      progEl.innerHTML = `
+        <div class="flex justify-between items-center text-xs text-slate-600 font-semibold mb-1">
+          <span>${progTitle} <span class="text-[11px] text-slate-400 font-normal">${progSub}</span></span>
+          <span class="${textColor} font-bold">${percent}%</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+          <div class="${barColor} h-2.5 rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+        </div>
+      `;
     }
 
     function openImageViewer(src) {
@@ -1540,8 +1806,8 @@
         <tr class="border-b">
           <td class="p-1 font-mono">${item.sku}</td>
           <td class="p-1 truncate max-w-[100px]">${item.name}</td>
+          <td class="p-1 font-semibold">${item.category || '-'}</td>
           <td class="p-1 font-mono">${item.batchNo || '-'}</td>
-          <td class="p-1 font-mono">${item.expDate || '-'}</td>
           <td class="p-1">${item.company || '-'}</td>
         </tr>
       `).join('');
@@ -1621,8 +1887,8 @@
 
     function downloadSampleCSV() {
       let csv = '\uFEFFSKU編號,品名,類別,儲存地點,帳面數量,單位,產品批號,有效日期,所屬公司\n';
-      csv += '0012001,乙基麥芽酚,原料,1F原料區,679.95,KG,201410,2027-08-08,總公司\n';
-      csv += '0012002,KLEEZ 乙基麥芽酚,原料,1F冷倉,111,KG,201410,2027-08-08,分公司A\n';
+      csv += '0012001,乙基麥芽酚,原料,1F原料區,679.95,KG,201410,2027-08-08,佳津\n';
+      csv += '0012002,鋁箔立袋(500g),包材,1F倉庫(前),1200,PCS,202603,2029-12-31,總公司\n';
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
