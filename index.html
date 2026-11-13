@@ -44,13 +44,16 @@
           <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
             <i class="fa-solid fa-file-import"></i> 匯入
           </button>
+          <button onclick="openAuditLogModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="查看全站操作日誌">
+            <i class="fa-solid fa-clock-rotate-left"></i> 紀錄
+          </button>
           <button onclick="openPersonnelModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="人員管理">
             <i class="fa-solid fa-user-gear"></i> 人員
           </button>
           <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
             <i class="fa-solid fa-lock"></i> 全域鎖定
           </button>
-          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料">
+          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空庫存品項(保留操作紀錄)">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
@@ -162,6 +165,54 @@
     <div class="relative max-w-full max-h-full">
       <img id="fullImageView" src="" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain">
       <button onclick="closeImageViewer()" class="absolute -top-4 -right-4 bg-white text-slate-800 rounded-full w-8 h-8 font-bold shadow-lg">✕</button>
+    </div>
+  </div>
+
+  <!-- 管理員全站操作紀錄後台 Modal (獨立儲存於 audit_logs) -->
+  <div id="auditLogModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4">
+    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+      <div class="flex justify-between items-center px-4 py-3 bg-purple-950 text-white">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
+          <h3 class="font-bold text-base">系統全站操作紀錄後台 (獨立稽核日誌)</h3>
+        </div>
+        <button onclick="closeAuditLogModal()" class="text-white/70 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <!-- 日誌篩選與工具列 -->
+      <div class="p-3 bg-slate-50 border-b border-slate-200 space-y-2">
+        <div class="flex flex-wrap gap-2">
+          <div class="relative flex-1 min-w-[180px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="logSearchInput" oninput="renderAuditLogModalList()" placeholder="搜尋操作人員、SKU、品名或變更內容..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
+          </div>
+          <select id="logRoleFilter" onchange="renderAuditLogModalList()" class="bg-white border border-slate-300 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none">
+            <option value="all">全部部門角色</option>
+            <option value="warehouse">倉管人員 (Warehouse)</option>
+            <option value="qc">品管人員 (QC)</option>
+            <option value="buyer">採購人員 (Purchasing)</option>
+            <option value="admin">管理員 (Admin)</option>
+          </select>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+          <span class="text-slate-600 font-semibold">
+            共篩選出 <span id="filteredLogCount" class="text-purple-700 font-black">0</span> 筆紀錄
+            <span class="text-[11px] text-slate-400 font-normal ml-1">(與庫存主檔分開保存，清空品項不會刪除此日誌)</span>
+          </span>
+          <div class="flex items-center gap-2">
+            <button onclick="exportAuditLogsCSV()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 transition">
+              <i class="fa-solid fa-file-csv"></i> 匯出日誌 CSV
+            </button>
+            <button onclick="confirmClearAuditLogs()" class="bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded-lg font-semibold flex items-center gap-1 transition">
+              <i class="fa-solid fa-trash-can"></i> 清空歷史日誌
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 日誌列表主體 -->
+      <div id="auditLogListContainer" class="flex-1 overflow-y-auto p-3 space-y-2 bg-slate-100/70"></div>
     </div>
   </div>
 
@@ -327,8 +378,39 @@
       dot: 'bg-slate-400'
     };
 
+    const FIELD_LABEL_MAP = {
+      location: '完整貨儲存地點',
+      looseLocation: '散貨儲存地點',
+      batchNo: '產品批號',
+      expDate: '有效日期',
+      buyerNote: '採購覆核說明',
+      pkgIntact: '包裝是否完好',
+      hasLooseStock: '是否有散貨',
+      qualityCheck: '品質外觀/風味/流動性',
+      abnormalAction: '異常處置方式',
+      note: '品管盤點備註'
+    };
+
+    const ROLE_LABEL_MAP = {
+      qc: '品管',
+      warehouse: '倉管',
+      buyer: '採購',
+      admin: '管理員'
+    };
+
+    const ROLE_BADGE_MAP = {
+      qc: 'bg-indigo-100 text-indigo-800',
+      warehouse: 'bg-emerald-100 text-emerald-800',
+      buyer: 'bg-amber-100 text-amber-800',
+      admin: 'bg-purple-100 text-purple-800'
+    };
+
     // 全局變數
     let inventoryData = [];
+    let auditLogsList = []; // 全站操作日誌 (由新到舊)
+    let itemLogsMap = {};   // 依 itemId 分組的變更紀錄
+    let expandedLogItemIds = new Set(); // 卡片內展開完整變更紀錄的品項 ID
+    let logDisplayLimit = 150;
     let companyColorMap = {};
     let currentPageItems = [];
     let currentPage = 1;
@@ -349,6 +431,22 @@
     let isAllExpanded = false;
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
+
+    // 寫入獨立操作日誌 (Firebase audit_logs 節點，與 inventory_items 分開儲存)
+    function recordAuditLog(item, action, detail) {
+      const logEntry = {
+        timestamp: Date.now(),
+        timeStr: new Date().toLocaleString('zh-TW'),
+        operator: selectedAuditor || '未知人員',
+        role: currentRole || 'qc',
+        itemId: item && item.id ? item.id : 'SYSTEM',
+        sku: item && item.sku ? item.sku : '系統操作',
+        itemName: item && item.name ? item.name : '系統設定 / 批次作業',
+        action: action,
+        detail: detail
+      };
+      db.ref('audit_logs').push(logEntry);
+    }
 
     // 數值精準四捨五入至小數點後四位，並自動省略後方多餘的 0
     function round4(num) {
@@ -460,6 +558,31 @@
         console.error("Firebase 連線錯誤:", error);
         document.getElementById('syncStatus').className = "inline-block w-2 h-2 rounded-full bg-rose-500";
         document.getElementById('savedTimeNotice').innerText = '連線失敗(請檢查權限)';
+      });
+
+      // 監聽獨立操作日誌節點
+      db.ref('audit_logs').on('value', (snapshot) => {
+        const data = snapshot.val();
+        itemLogsMap = {};
+        if (data) {
+          auditLogsList = Object.keys(data).map(key => ({
+            logId: key,
+            ...data[key]
+          })).sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+          auditLogsList.forEach(log => {
+            if (log.itemId && log.itemId !== 'SYSTEM') {
+              if (!itemLogsMap[log.itemId]) itemLogsMap[log.itemId] = [];
+              itemLogsMap[log.itemId].push(log);
+            }
+          });
+        } else {
+          auditLogsList = [];
+        }
+        renderItemList();
+        if (!document.getElementById('auditLogModal').classList.contains('hidden')) {
+          renderAuditLogModalList();
+        }
       });
 
       db.ref('personnel_list').on('value', (snapshot) => {
@@ -674,6 +797,7 @@
         : "確定要解除全域鎖定嗎？";
       if (confirm(msg)) {
         db.ref('system_settings/isGlobalLocked').set(targetState);
+        recordAuditLog(null, '系統全域鎖定切換', targetState ? '解除鎖定 → 全域鎖定' : '全域鎖定 → 解除鎖定');
       }
     }
 
@@ -683,6 +807,7 @@
       if (!item) return;
       const targetState = !item.lockedByBuyer;
       db.ref(`inventory_items/${id}/lockedByBuyer`).set(targetState);
+      recordAuditLog(item, '採購盤點鎖定狀態', targetState ? '未鎖定 → 已盤點(鎖定)' : '已盤點(鎖定) → 解除鎖定');
     }
 
     function renderAuditorOptions() {
@@ -735,6 +860,7 @@
       if (name && !personnelList.some(p => p.name === name)) {
         personnelList.push({ name: name, role: role });
         db.ref('personnel_list').set(personnelList);
+        recordAuditLog(null, '新增操作人員', `新增人員：${name} (${ROLE_LABEL_MAP[role] || role})`);
         input.value = '';
         renderPersonnelList();
       } else if (name) {
@@ -746,9 +872,184 @@
         alert('請至少保留一名人員');
         return;
       }
+      const removed = personnelList[idx];
       personnelList.splice(idx, 1);
       db.ref('personnel_list').set(personnelList);
+      if (removed) {
+        recordAuditLog(null, '移除操作人員', `移除人員：${removed.name} (${ROLE_LABEL_MAP[removed.role] || removed.role})`);
+      }
       renderPersonnelList();
+    }
+
+    // 切換單一品項卡片底部的完整變更紀錄顯示
+    function toggleItemLogsExpand(itemId) {
+      if (expandedLogItemIds.has(itemId)) {
+        expandedLogItemIds.delete(itemId);
+      } else {
+        expandedLogItemIds.add(itemId);
+      }
+      renderItemList();
+    }
+
+    // 產生單一品項卡片底部的變更紀錄區塊 HTML
+    function renderItemBottomLogsHtml(itemId) {
+      const logs = itemLogsMap[itemId] || [];
+      const isExpandedAllLogs = expandedLogItemIds.has(itemId);
+      const visibleLogs = isExpandedAllLogs ? logs : logs.slice(0, 3);
+
+      return `
+        <div class="pt-2.5 mt-2 border-t border-slate-200/80">
+          <div class="flex items-center justify-between mb-1.5">
+            <span class="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+              <i class="fa-solid fa-clock-rotate-left text-purple-600"></i> 變更紀錄 (共 ${logs.length} 筆)
+            </span>
+            ${logs.length > 3 ? `
+              <button onclick="toggleItemLogsExpand('${itemId}')" class="text-[11px] text-purple-700 hover:text-purple-900 font-semibold">
+                ${isExpandedAllLogs ? '收合為最新 3 筆' : `查看全部 ${logs.length} 筆`}
+              </button>
+            ` : ''}
+          </div>
+          ${logs.length === 0 ? `
+            <div class="text-[11px] text-slate-400 bg-slate-50 rounded px-2.5 py-1.5">尚無修改變更紀錄</div>
+          ` : `
+            <div class="space-y-1 max-h-48 overflow-y-auto pr-0.5">
+              ${visibleLogs.map(log => `
+                <div class="bg-slate-50 border border-slate-200/70 rounded px-2.5 py-1.5 text-[11px] flex flex-wrap items-center justify-between gap-1">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="px-1.5 py-0.2 rounded font-bold text-[10px] ${ROLE_BADGE_MAP[log.role] || 'bg-slate-200 text-slate-700'}">${ROLE_LABEL_MAP[log.role] || '人員'}</span>
+                    <span class="font-bold text-slate-700">${log.operator}</span>
+                    <span class="text-slate-400">·</span>
+                    <span class="font-semibold text-indigo-700">${log.action}</span>
+                    <span class="text-slate-600 font-mono bg-white px-1.5 py-0.2 rounded border border-slate-200">${log.detail}</span>
+                  </div>
+                  <span class="text-[10px] text-slate-400 font-mono shrink-0">${log.timeStr}</span>
+                </div>
+              `).join('')}
+            </div>
+          `}
+        </div>
+      `;
+    }
+
+    // 管理員操作紀錄後台 Modal 控制與渲染
+    function openAuditLogModal() {
+      if (currentRole !== 'admin') {
+        alert('只有管理員可以檢視全站操作紀錄後台');
+        return;
+      }
+      logDisplayLimit = 150;
+      document.getElementById('auditLogModal').classList.remove('hidden');
+      renderAuditLogModalList();
+    }
+
+    function closeAuditLogModal() {
+      document.getElementById('auditLogModal').classList.add('hidden');
+    }
+
+    function loadMoreAuditLogs() {
+      logDisplayLimit += 150;
+      renderAuditLogModalList();
+    }
+
+    function getFilteredAuditLogs() {
+      const search = (document.getElementById('logSearchInput')?.value || '').toLowerCase().trim();
+      const roleFilter = document.getElementById('logRoleFilter')?.value || 'all';
+
+      return auditLogsList.filter(log => {
+        const matchesRole = (roleFilter === 'all') || (log.role === roleFilter);
+        const matchesSearch = !search ||
+          (log.operator || '').toLowerCase().includes(search) ||
+          (log.sku || '').toLowerCase().includes(search) ||
+          (log.itemName || '').toLowerCase().includes(search) ||
+          (log.action || '').toLowerCase().includes(search) ||
+          (log.detail || '').toLowerCase().includes(search);
+        return matchesRole && matchesSearch;
+      });
+    }
+
+    function renderAuditLogModalList() {
+      const container = document.getElementById('auditLogListContainer');
+      const countEl = document.getElementById('filteredLogCount');
+      if (!container) return;
+
+      const filtered = getFilteredAuditLogs();
+      if (countEl) countEl.innerText = filtered.length;
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 text-slate-400 text-xs">
+            <i class="fa-solid fa-clipboard-list text-3xl mb-2"></i>
+            <p>目前無符合條件的操作紀錄</p>
+          </div>
+        `;
+        return;
+      }
+
+      const sliceLogs = filtered.slice(0, logDisplayLimit);
+      let html = sliceLogs.map(log => `
+        <div class="bg-white rounded-lg border border-slate-200 p-2.5 shadow-sm text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div class="space-y-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="px-2 py-0.5 rounded-full font-bold text-[10px] ${ROLE_BADGE_MAP[log.role] || 'bg-slate-200 text-slate-700'}">${ROLE_LABEL_MAP[log.role] || '人員'}</span>
+              <span class="font-bold text-slate-800">${log.operator}</span>
+              <span class="font-mono text-[11px] bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded font-semibold">${log.sku}</span>
+              <span class="font-bold text-slate-700">${log.itemName}</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+              <span class="font-bold text-purple-800">${log.action}：</span>
+              <span class="font-mono text-slate-700 bg-purple-50/70 border border-purple-200 px-2 py-0.5 rounded">${log.detail}</span>
+            </div>
+          </div>
+          <div class="text-[11px] text-slate-400 font-mono shrink-0 sm:text-right">
+            ${log.timeStr}
+          </div>
+        </div>
+      `).join('');
+
+      if (filtered.length > logDisplayLimit) {
+        html += `
+          <div class="text-center py-2">
+            <button onclick="loadMoreAuditLogs()" class="px-4 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold text-purple-700 hover:bg-purple-50 shadow-sm">
+              載入更多紀錄 (尚有 ${filtered.length - logDisplayLimit} 筆)
+            </button>
+          </div>
+        `;
+      }
+
+      container.innerHTML = html;
+    }
+
+    function exportAuditLogsCSV() {
+      const logsToExport = getFilteredAuditLogs();
+      if (logsToExport.length === 0) {
+        alert('目前無可匯出的操作紀錄！');
+        return;
+      }
+      let csv = '\uFEFF操作時間,部門角色,操作人員,SKU編號,品名,變更項目,變更明細\n';
+      logsToExport.forEach(log => {
+        csv += [
+          `"${log.timeStr || ''}"`,
+          `"${ROLE_LABEL_MAP[log.role] || log.role || ''}"`,
+          `"${(log.operator || '').replace(/"/g, '""')}"`,
+          `"${(log.sku || '').replace(/"/g, '""')}"`,
+          `"${(log.itemName || '').replace(/"/g, '""')}"`,
+          `"${(log.action || '').replace(/"/g, '""')}"`,
+          `"${(log.detail || '').replace(/"/g, '""')}"`
+        ].join(',') + '\n';
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      link.href = URL.createObjectURL(blob);
+      link.download = `系統操作稽核日誌_${new Date().toISOString().slice(0,10)}.csv`;
+      link.click();
+    }
+
+    function confirmClearAuditLogs() {
+      if (currentRole !== 'admin') return;
+      if (confirm('【獨立日誌清除】確定要永久清空所有「歷史操作紀錄日誌」嗎？（此動作不會影響目前的庫存品項資料，但日誌清除後無法復原！）')) {
+        db.ref('audit_logs').remove();
+      }
     }
 
     // 動態更新「公司別」篩選選單、專屬色彩對照表與上方色標圖例
@@ -1081,7 +1382,7 @@
             </div>
 
             ${isExpanded ? `
-              <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/80 rounded-lg p-2.5">
+              <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/90 rounded-lg p-2.5">
                 
                 <!-- 倉管雙儲存地點下拉選單 (品管與採購模式為唯讀檢視) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1284,6 +1585,9 @@
                   </div>
                 ` : ''}
 
+                <!-- 卡片底部變更紀錄區塊 -->
+                ${renderItemBottomLogsHtml(item.id)}
+
               </div>
             ` : ''}
           </div>
@@ -1299,11 +1603,20 @@
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
 
+      const oldIntact = getIntactQty(item);
+      const oldLoose = getLooseQty(item);
       const intactEl = document.getElementById(`intactInput_${id}`);
       const looseEl = document.getElementById(`looseInput_${id}`);
-      const intact = intactEl ? round4(parseFloat(intactEl.value) || 0) : getIntactQty(item);
-      const loose = looseEl ? round4(parseFloat(looseEl.value) || 0) : getLooseQty(item);
+      const intact = intactEl ? round4(parseFloat(intactEl.value) || 0) : oldIntact;
+      const loose = looseEl ? round4(parseFloat(looseEl.value) || 0) : oldLoose;
       const totalActual = round4(intact + loose);
+
+      if (intact !== oldIntact) {
+        recordAuditLog(item, '修改完整貨數量', `${oldIntact} → ${intact} ${item.unit}`);
+      }
+      if (loose !== oldLoose) {
+        recordAuditLog(item, '修改散貨數量', `${oldLoose} → ${loose} ${item.unit}`);
+      }
 
       db.ref(`inventory_items/${id}`).update({
         intactQty: intact,
@@ -1314,17 +1627,23 @@
         warehouseAuditor: selectedAuditor,
         warehouseTime: new Date().toLocaleString('zh-TW')
       });
+
+      recordAuditLog(item, item.warehouseCompleted ? '更新初盤紀錄' : '儲存初盤紀錄', `完整貨 ${intact} + 散貨 ${loose} = 實盤總數 ${totalActual} ${item.unit}`);
     }
 
     // 重置倉管初盤狀態
     function resetWarehouseCheck(id) {
       if (isGlobalLocked) return;
       if (!confirm('確定要重置此品項的「已初盤」狀態嗎？')) return;
+      const item = inventoryData.find(i => i.id === id);
       db.ref(`inventory_items/${id}`).update({
         warehouseCompleted: false,
         warehouseAuditor: '',
         warehouseTime: ''
       });
+      if (item) {
+        recordAuditLog(item, '重置初盤狀態', '已初盤 → 待初盤');
+      }
     }
 
     // 更新完整貨與散貨數量，自動加總實盤總數量並連動品管「是否有散貨」欄位
@@ -1333,9 +1652,11 @@
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
 
+      const oldIntact = getIntactQty(item);
+      const oldLoose = getLooseQty(item);
       const parsedVal = round4(parseFloat(rawValue) || 0);
-      const intact = type === 'intact' ? parsedVal : getIntactQty(item);
-      const loose = type === 'loose' ? parsedVal : getLooseQty(item);
+      const intact = type === 'intact' ? parsedVal : oldIntact;
+      const loose = type === 'loose' ? parsedVal : oldLoose;
       const totalActual = round4(intact + loose);
 
       const updates = {
@@ -1344,8 +1665,14 @@
         actualQty: totalActual
       };
 
-      if (type === 'loose') {
-        updates.hasLooseStock = loose > 0 ? '是' : '否';
+      if (type === 'intact' && intact !== oldIntact) {
+        recordAuditLog(item, '修改完整貨數量', `${oldIntact} → ${intact} ${item.unit}`);
+      }
+
+      if (type === 'loose' && loose !== oldLoose) {
+        const newHasLoose = loose > 0 ? '是' : '否';
+        updates.hasLooseStock = newHasLoose;
+        recordAuditLog(item, '修改散貨數量', `${oldLoose} → ${loose} ${item.unit} (是否有散貨連動：${newHasLoose})`);
       }
 
       db.ref(`inventory_items/${id}`).update(updates);
@@ -1353,22 +1680,44 @@
 
     function updateItemField(id, field, value) {
       if (isGlobalLocked) return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item) return;
+
+      const oldVal = (item[field] === undefined || item[field] === null) ? '' : String(item[field]);
+      const newVal = (value === undefined || value === null) ? '' : String(value);
+
       db.ref(`inventory_items/${id}/${field}`).set(value);
+
+      if (oldVal !== newVal) {
+        const label = FIELD_LABEL_MAP[field] || field;
+        recordAuditLog(item, `修改${label}`, `${oldVal || '(空白)'} → ${newVal || '(空白)'}`);
+      }
     }
 
     function updateCondition(id, cond) {
       if (isGlobalLocked) return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item) return;
+
+      const oldCond = item.condition || '';
       const updates = { condition: cond };
       if (cond === 'normal') updates.abnormalAction = '';
       db.ref(`inventory_items/${id}`).update(updates);
+
+      if (oldCond !== cond) {
+        const condText = { normal: '正常 (PASS)', abnormal: '異常 (FAIL)' };
+        recordAuditLog(item, '變更品質性狀判定', `${condText[oldCond] || '未判定'} → ${condText[cond] || cond}`);
+      }
     }
 
     function addNoteChip(id, text) {
       if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
       if (item) {
-        const newNote = item.note ? `${item.note}；${text}` : text;
+        const oldNote = item.note || '';
+        const newNote = oldNote ? `${oldNote}；${text}` : text;
         db.ref(`inventory_items/${id}/note`).set(newNote);
+        recordAuditLog(item, '新增盤點備註標籤', `${oldNote || '(空白)'} → ${newNote}`);
       }
     }
 
@@ -1376,6 +1725,7 @@
       if (isGlobalLocked) return;
       const file = event.target.files[0];
       if (!file) return;
+      const item = inventoryData.find(i => i.id === id);
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -1398,6 +1748,9 @@
 
           const compressedBase64 = canvas.toDataURL('image/jpeg', 0.65);
           db.ref(`inventory_items/${id}/photo`).set(compressedBase64);
+          if (item) {
+            recordAuditLog(item, '上傳包裝/標籤照片', item.photo ? '更新照片檔案' : '新增上傳照片檔案');
+          }
         };
         img.src = e.target.result;
       };
@@ -1423,6 +1776,10 @@
         auditor: selectedAuditor,
         auditTime: new Date().toLocaleString('zh-TW')
       });
+
+      const condLabel = item.condition === 'normal' ? '正常 (PASS)' : '異常 (FAIL)';
+      const actionSuffix = item.abnormalAction ? ` / 處置：${item.abnormalAction}` : '';
+      recordAuditLog(item, item.audited ? '更新品管判定' : '完成品管判定', `判定結果：${condLabel}${actionSuffix}`);
     }
 
     function resetSingleAudit(id) {
@@ -1438,13 +1795,20 @@
         photo: null,
         note: ''
       });
+      if (item) {
+        recordAuditLog(item, '重置品管檢查紀錄', '已檢查 → 待檢查 (清除判定、異常處置、照片與備註)');
+      }
     }
 
     function deleteSingleItem(id) {
       if (currentRole !== 'admin') { alert('只有管理員可以刪除品項'); return; }
       if (!confirm('確定要徹底刪除此筆品項嗎？')) return;
+      const item = inventoryData.find(i => i.id === id);
       selectedItemIds.delete(id);
       db.ref(`inventory_items/${id}`).remove();
+      if (item) {
+        recordAuditLog(item, '刪除單筆品項', `刪除品項 [${item.sku}] ${item.name}`);
+      }
     }
 
     function toggleItemSelect(id, checked) {
@@ -1479,17 +1843,25 @@
     function deleteSelectedItems() {
       if (currentRole !== 'admin') return;
       if (!confirm(`確定要徹底刪除選取的 ${selectedItemIds.size} 筆品項嗎？`)) return;
+      const deletedSkus = [];
       selectedItemIds.forEach(id => {
+        const found = inventoryData.find(i => i.id === id);
+        if (found) deletedSkus.push(found.sku || found.name);
         db.ref(`inventory_items/${id}`).remove();
       });
+      const preview = deletedSkus.slice(0, 5).join(', ') + (deletedSkus.length > 5 ? ` 等共 ${deletedSkus.length} 筆` : '');
+      recordAuditLog(null, '批次刪除品項', `刪除 ${deletedSkus.length} 筆品項 (${preview})`);
       selectedItemIds.clear();
       updateBatchDeleteBtn();
     }
 
+    // 清空雲端庫存品項 (與 audit_logs 完全分開，不刪除歷史操作日誌)
     function confirmClearAllData() {
       if (currentRole !== 'admin') return;
-      if (confirm('【危險動作】確定要清空雲端資料庫中「所有」品項資料嗎？此動作無法復原！')) {
+      if (confirm('【清空庫存品項】確定要清空雲端資料庫中「所有庫存品項」嗎？\n（註：歷史操作紀錄日誌將會獨立保留，不會被清除）')) {
+        const totalCount = inventoryData.length;
         db.ref('inventory_items').remove();
+        recordAuditLog(null, '清空全部庫存品項', `清空資料庫共 ${totalCount} 筆品項資料（歷史操作日誌已獨立保留）`);
         selectedItemIds.clear();
         updateBatchDeleteBtn();
       }
@@ -1829,6 +2201,8 @@
       } else {
         db.ref('inventory_items').update(updates);
       }
+
+      recordAuditLog(null, '匯入庫存主檔', `${mode === 'overwrite' ? '覆蓋模式' : '追加模式'}匯入共 ${pendingParsedData.length} 筆品項`);
 
       closeImportModal();
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
