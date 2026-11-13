@@ -312,12 +312,36 @@
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
 
+    // 數值精準四捨五入至小數點後四位，並自動省略後方多餘的 0
+    function round4(num) {
+      const val = Number((Number(num) || 0).toFixed(4));
+      return val === 0 ? 0 : val;
+    }
+
+    // 取得完整貨數量（相容舊版僅有 actualQty 的資料）
+    function getIntactQty(item) {
+      if (item.intactQty !== undefined && item.intactQty !== null && item.intactQty !== '') {
+        return round4(item.intactQty);
+      }
+      return round4(item.actualQty ?? item.systemQty ?? 0);
+    }
+
+    // 取得散貨數量
+    function getLooseQty(item) {
+      if (item.looseQty !== undefined && item.looseQty !== null && item.looseQty !== '') {
+        return round4(item.looseQty);
+      }
+      return 0;
+    }
+
+    // 取得實盤總數量（完整貨 + 散貨）
+    function getTotalActualQty(item) {
+      return round4(getIntactQty(item) + getLooseQty(item));
+    }
+
     // 精準計算盤差：保留至小數點後四位，並自動省略後方多餘的 0
     function calcDiscrepancy(actualQty, systemQty) {
-      const actual = actualQty ?? systemQty ?? 0;
-      const system = systemQty ?? 0;
-      const rounded = Number((actual - system).toFixed(4));
-      return rounded === 0 ? 0 : rounded;
+      return round4((actualQty ?? systemQty ?? 0) - (systemQty ?? 0));
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -653,12 +677,10 @@
     }
 
     // 渲染倉管儲存地點下拉選項
-    function renderLocationOptions(currentLoc) {
+    function renderLocationOptions(currentLoc, emptyLabel = '-- 請選擇儲存地點 --') {
       const val = (currentLoc || '').trim();
-      let html = '';
-      if (!val) {
-        html += `<option value="" selected>-- 請選擇儲存地點 --</option>`;
-      } else if (!STORAGE_LOCATIONS.includes(val)) {
+      let html = `<option value="" ${!val ? 'selected' : ''}>${emptyLabel}</option>`;
+      if (val && !STORAGE_LOCATIONS.includes(val)) {
         html += `<option value="${val}" selected>${val} (原匯入儲位)</option>`;
       }
       html += STORAGE_LOCATIONS.map(loc => 
@@ -680,10 +702,12 @@
                               (item.name || '').toLowerCase().includes(search) || 
                               (item.batchNo || '').toLowerCase().includes(search) || 
                               (item.location || '').toLowerCase().includes(search) ||
+                              (item.looseLocation || '').toLowerCase().includes(search) ||
                               (item.company || '').toLowerCase().includes(search);
         const matchesCompany = (companyFilter === 'all') || ((item.company || '') === companyFilter);
         let matchesStatus = true;
-        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
+        const totalActual = getTotalActualQty(item);
+        const diff = calcDiscrepancy(totalActual, item.systemQty);
         const hasDiscrepancy = (diff !== 0);
         
         if (filter === 'pending') matchesStatus = !item.audited;
@@ -743,8 +767,13 @@
         const isChecked = selectedItemIds.has(item.id);
         const isExpanded = expandedItemIds.has(item.id);
         const isExpired = item.expDate && item.expDate < todayStr;
-        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
+
+        const intactQty = getIntactQty(item);
+        const looseQty = getLooseQty(item);
+        const totalActual = getTotalActualQty(item);
+        const diff = calcDiscrepancy(totalActual, item.systemQty);
         const hasDiscrepancy = (diff !== 0);
+        const hasLooseInfo = looseQty > 0 || Boolean((item.looseLocation || '').trim());
 
         const isWarehouseLocked = isGlobalLocked || item.lockedByBuyer;
         const isQcLocked = isGlobalLocked;
@@ -768,13 +797,28 @@
                       </div>
                     </div>
 
-                    <!-- 2. 儲存地點標籤 + 小黑框提示 -->
-                    <div class="relative group inline-block">
-                      <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
-                      <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
-                        儲存地點
+                    <!-- 2. 儲存地點標籤 (無散貨時顯示單一地點；有散貨重量或地點時並列顯示完整貨與散貨地點) -->
+                    ${hasLooseInfo ? `
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${item.location || '未指定'}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          完整貨儲存地點
+                        </div>
                       </div>
-                    </div>
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${item.looseLocation || '未指定'}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          散貨儲存地點
+                        </div>
+                      </div>
+                    ` : `
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          完整貨儲存地點
+                        </div>
+                      </div>
+                    `}
 
                     <!-- 3. 批號標籤 + 小黑框提示 -->
                     ${item.batchNo ? `
@@ -823,12 +867,20 @@
             ${isExpanded ? `
               <div class="pt-3 mt-2 border-t border-slate-100 space-y-3">
                 
-                <!-- 倉管儲存地點下拉選單 -->
-                <div>
-                  <label class="block text-[11px] font-bold text-slate-500 mb-0.5"><i class="fa-solid fa-warehouse text-emerald-600 mr-1"></i>儲存地點 (倉管/品管)：</label>
-                  <select ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500">
-                    ${renderLocationOptions(item.location)}
-                  </select>
+                <!-- 倉管雙儲存地點下拉選單 (完整貨 / 散貨) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5"><i class="fa-solid fa-warehouse text-emerald-600 mr-1"></i>完整貨儲存地點 (倉管/品管)：</label>
+                    <select ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500">
+                      ${renderLocationOptions(item.location, '-- 請選擇完整貨地點 --')}
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5"><i class="fa-solid fa-box-open text-teal-600 mr-1"></i>散貨儲存地點 (倉管/品管)：</label>
+                    <select ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'looseLocation', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-500">
+                      ${renderLocationOptions(item.looseLocation, '-- 無散貨 / 未指定 --')}
+                    </select>
+                  </div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-2">
@@ -844,15 +896,27 @@
 
                 ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
 
-                <div class="grid grid-cols-2 gap-2 bg-slate-50 p-2 rounded-lg text-xs">
-                  <div>
-                    <span class="text-slate-500">帳面數量：</span>
-                    <span class="font-bold text-slate-700">${item.systemQty} ${item.unit}</span>
+                <!-- 數量輸入與自動加總區 (完整貨 + 散貨 = 實盤總數量) -->
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2">
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200/70">
+                    <div>
+                      <span class="text-slate-500">帳面數量：</span>
+                      <span class="font-bold text-slate-700">${item.systemQty} ${item.unit}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-500">實盤總數量：</span>
+                      <span class="font-black text-indigo-700 text-sm">${totalActual} ${item.unit}</span>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-1">
-                    <span class="text-slate-500">實盤數量：</span>
-                    <input type="number" value="${item.actualQty ?? item.systemQty}" ${isWarehouseLocked ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'actualQty', parseFloat(this.value)||0)" class="w-20 border rounded px-1.5 py-0.5 text-xs font-bold text-indigo-900 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-200">
-                    <span class="text-slate-500">${item.unit}</span>
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-600 mb-0.5">完整貨數量 (${item.unit})：</label>
+                      <input type="number" step="any" value="${intactQty}" ${isWarehouseLocked ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'intact', this.value)" class="w-full border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-200">
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-bold text-teal-700 mb-0.5">散貨數量 (${item.unit})：</label>
+                      <input type="number" step="any" value="${looseQty}" ${isWarehouseLocked ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'loose', this.value)" class="w-full border border-teal-300 bg-white rounded px-2 py-1 text-xs font-bold text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-200">
+                    </div>
                   </div>
                 </div>
 
@@ -889,7 +953,7 @@
                     </div>
 
                     <div class="flex items-center justify-between">
-                      <span class="text-slate-600 font-medium">2. 是否有散貨：</span>
+                      <span class="text-slate-600 font-medium">2. 是否有散貨 <span class="text-[10px] text-teal-600">(隨散貨數量連動)</span>：</span>
                       <div class="flex gap-1">
                         <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
                         <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
@@ -986,6 +1050,30 @@
       updateDashboard();
     }
 
+    // 更新完整貨與散貨數量，自動加總實盤總數量並連動品管「是否有散貨」欄位
+    function updateQuantities(id, type, rawValue) {
+      if (isGlobalLocked) return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item) return;
+
+      const parsedVal = round4(parseFloat(rawValue) || 0);
+      const intact = type === 'intact' ? parsedVal : getIntactQty(item);
+      const loose = type === 'loose' ? parsedVal : getLooseQty(item);
+      const totalActual = round4(intact + loose);
+
+      const updates = {
+        intactQty: intact,
+        looseQty: loose,
+        actualQty: totalActual
+      };
+
+      if (type === 'loose') {
+        updates.hasLooseStock = loose > 0 ? '是' : '否';
+      }
+
+      db.ref(`inventory_items/${id}`).update(updates);
+    }
+
     function updateItemField(id, field, value) {
       if (isGlobalLocked) return;
       db.ref(`inventory_items/${id}/${field}`).set(value);
@@ -1063,10 +1151,13 @@
     function resetSingleAudit(id) {
       if (isGlobalLocked) return;
       if (!confirm('確定要重置此品項的盤點紀錄嗎？')) return;
+      const item = inventoryData.find(i => i.id === id);
+      const hasLoose = item ? (getLooseQty(item) > 0 ? '是' : '否') : '否';
       db.ref(`inventory_items/${id}`).update({
         audited: false,
         condition: null,
         abnormalAction: '',
+        hasLooseStock: hasLoose,
         photo: null,
         note: ''
       });
@@ -1131,7 +1222,7 @@
       const total = inventoryData.length;
       const completed = inventoryData.filter(i => i.audited).length;
       const normal = inventoryData.filter(i => i.audited && i.condition === 'normal').length;
-      const abnormalOrDisc = inventoryData.filter(i => (i.audited && i.condition === 'abnormal') || (calcDiscrepancy(i.actualQty, i.systemQty) !== 0)).length;
+      const abnormalOrDisc = inventoryData.filter(i => (i.audited && i.condition === 'abnormal') || (calcDiscrepancy(getTotalActualQty(i), i.systemQty) !== 0)).length;
       const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
 
       document.getElementById('statTotal').innerText = total;
@@ -1168,7 +1259,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Excel/CSV 解析 (開頭 0 完全保留，並支援最後一欄「公司」)
+    // Excel/CSV 解析 (開頭 0 完全保留，並支援最後一欄「公司」；預設完整貨帶入帳面量、散貨為 0)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -1241,7 +1332,7 @@
         if (!skuVal && !nameVal) continue;
 
         let rawQty = String(row[qtyIdx] || '0').replace(/[^0-9.-]/g, '');
-        let parsedQty = parseFloat(rawQty) || 0;
+        let parsedQty = round4(parseFloat(rawQty) || 0);
 
         let expDateStr = String(row[expIdx] || '').trim();
         if (expDateStr.includes('/')) {
@@ -1260,8 +1351,11 @@
           name: nameVal,
           category: String(row[catIdx] || '原料').trim(),
           location: String(row[locIdx] || '').trim(),
+          looseLocation: '',
           company: compVal,
           systemQty: parsedQty,
+          intactQty: parsedQty,
+          looseQty: 0,
           actualQty: parsedQty,
           unit: String(row[unitIdx] || 'kg').trim(),
           batchNo: String(row[batchIdx] || '').trim(),
@@ -1317,19 +1411,25 @@
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,儲存地點,所屬公司,產品批號,有效日期,帳面數量,實盤數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
+      let csv = '\uFEFFSKU編號,品名,類別,完整貨儲存地點,散貨儲存地點,所屬公司,產品批號,有效日期,帳面數量,完整貨數量,散貨數量,實盤總數量,盤差,單位,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,盤點狀態,整體品質性狀,異常處置方式,採購覆核說明,倉管資料鎖定,最後操作人員,最後操作時間,品管備註,是否有照片\n';
       inventoryData.forEach(item => {
-        const diff = calcDiscrepancy(item.actualQty, item.systemQty);
+        const intactQty = getIntactQty(item);
+        const looseQty = getLooseQty(item);
+        const totalActual = getTotalActualQty(item);
+        const diff = calcDiscrepancy(totalActual, item.systemQty);
         csv += [
           `"${item.sku || ''}"`,
           `"${item.name || ''}"`,
           `"${item.category || ''}"`,
           `"${item.location || ''}"`,
+          `"${item.looseLocation || ''}"`,
           `"${item.company || ''}"`,
           `"${item.batchNo || ''}"`,
           `"${item.expDate || ''}"`,
           item.systemQty,
-          item.actualQty ?? item.systemQty,
+          intactQty,
+          looseQty,
+          totalActual,
           diff,
           `"${item.unit || ''}"`,
           `"${item.pkgIntact || '未判定'}"`,
