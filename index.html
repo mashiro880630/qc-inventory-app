@@ -53,12 +53,12 @@
           <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
             <i class="fa-solid fa-lock"></i> 全域鎖定
           </button>
-          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空庫存品項(保留操作紀錄)">
+          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料(保留操作紀錄)">
             <i class="fa-solid fa-trash-can"></i>
           </button>
         </div>
 
-        <button onclick="exportToCSV()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+        <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
           <i class="fa-solid fa-file-export"></i> 匯出
         </button>
       </div>
@@ -168,6 +168,60 @@
     </div>
   </div>
 
+  <!-- 客製化匯出報表 Modal -->
+  <div id="exportModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl max-w-md w-full p-4 shadow-xl">
+      <div class="flex justify-between items-center border-b pb-2 mb-3">
+        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-file-export text-emerald-600 mr-1.5"></i>匯出盤點報表 (CSV)</h3>
+        <button onclick="closeExportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
+      </div>
+
+      <div class="space-y-3 text-xs">
+        <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
+          <span class="text-slate-600 font-semibold">目前匯出權限格式：</span>
+          <span id="exportRoleFormatBadge" class="px-2.5 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-800">品管人員專屬報表</span>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2.5">
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">1. 選擇匯出公司：</label>
+            <select id="exportCompanySelect" onchange="updateExportPreviewCount()" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+              <option value="all">全部公司</option>
+            </select>
+          </div>
+          <div>
+            <label class="block font-bold text-slate-700 mb-1">2. 選擇物料類別：</label>
+            <select id="exportCategorySelect" onchange="updateExportPreviewCount()" class="w-full border border-slate-300 rounded-lg p-2 bg-white font-semibold text-slate-800 focus:ring-1 focus:ring-emerald-500 focus:outline-none">
+              <option value="all">全部類別</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="bg-emerald-50/70 border border-emerald-200 rounded-lg p-2.5 space-y-1">
+          <div class="font-bold text-emerald-900 flex items-center justify-between">
+            <span><i class="fa-solid fa-list-check mr-1"></i>本權限包含匯出欄位：</span>
+            <span class="text-emerald-700">符合條件：<span id="exportMatchCount" class="font-black text-sm">0</span> 筆</span>
+          </div>
+          <p id="exportColumnPreviewText" class="text-[11px] text-emerald-800 leading-relaxed"></p>
+        </div>
+
+        <div id="adminExportLogOption" class="hidden pt-1">
+          <label class="inline-flex items-center gap-2 cursor-pointer text-slate-700 font-semibold">
+            <input type="checkbox" id="includeLogCountCheckbox" checked class="w-4 h-4 text-purple-600 rounded">
+            <span>附加「品項變更紀錄次數」稽核欄位</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-4 pt-3 border-t">
+        <button onclick="closeExportModal()" class="px-3 py-1.5 rounded-lg text-xs text-slate-600 border hover:bg-slate-100">取消</button>
+        <button id="confirmExportBtn" onclick="executeCustomExport()" class="px-4 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50 flex items-center gap-1.5 shadow-sm">
+          <i class="fa-solid fa-download"></i> 確認下載 CSV
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 管理員全站操作紀錄後台 Modal (獨立儲存於 audit_logs) -->
   <div id="auditLogModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -252,9 +306,9 @@
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">2. 選擇檔案與編碼設定：</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. 選擇檔案與編碼設定 (CSV 專用)：</label>
           <div class="flex gap-2 mb-2">
-            <select id="encodingSelect" class="bg-slate-50 border text-xs rounded-lg p-1.5 flex-1">
+            <select id="encodingSelect" onchange="parseSelectedFile()" class="bg-slate-50 border text-xs rounded-lg p-1.5 flex-1">
               <option value="auto">自動判定編碼 (推薦)</option>
               <option value="Big5">Big5 (微軟 Windows 繁體中文 Excel 預設)</option>
               <option value="UTF-8">UTF-8 (Standard)</option>
@@ -274,7 +328,14 @@
           <div class="max-h-36 overflow-y-auto border rounded-lg text-[11px]">
             <table class="w-full text-left">
               <thead class="bg-slate-100 sticky top-0 text-slate-600">
-                <tr><th class="p-1.5">SKU</th><th class="p-1.5">品名</th><th class="p-1.5">類別</th><th class="p-1.5">批號</th><th class="p-1.5">公司</th></tr>
+                <tr>
+                  <th class="p-1.5">SKU</th>
+                  <th class="p-1.5">品名</th>
+                  <th class="p-1.5">類別</th>
+                  <th class="p-1.5">批號</th>
+                  <th class="p-1.5">有效日期</th>
+                  <th class="p-1.5">公司</th>
+                </tr>
               </thead>
               <tbody id="importPreviewTable"></tbody>
             </table>
@@ -431,6 +492,7 @@
     let isAllExpanded = false;
     let pendingParsedData = [];
     let currentRawArrayBuffer = null;
+    let currentUploadFileName = '';
 
     // 寫入獨立操作日誌 (Firebase audit_logs 節點，與 inventory_items 分開儲存)
     function recordAuditLog(item, action, detail) {
@@ -470,14 +532,123 @@
       return 0;
     }
 
-    // 取得實盤總數量（完整貨 + 散貨）
-    function getTotalActualQty(item) {
+    // 取得倉管初盤總數量（完整貨 + 散貨）
+    function getWarehouseTotalQty(item) {
       return round4(getIntactQty(item) + getLooseQty(item));
     }
 
-    // 精準計算盤差：保留至小數點後四位，並自動省略後方多餘的 0
-    function calcDiscrepancy(actualQty, systemQty) {
-      return round4((actualQty ?? systemQty ?? 0) - (systemQty ?? 0));
+    // 判斷採購是否已覆寫正式實盤數量
+    function hasOfficialOverride(item) {
+      return item.officialActualQty !== undefined && item.officialActualQty !== null && item.officialActualQty !== '';
+    }
+
+    // 取得最終採計的正式實盤數量（若採購已填寫則以採購為準，否則自動帶入倉管初盤總數）
+    function getFinalActualQty(item) {
+      if (hasOfficialOverride(item)) {
+        return round4(item.officialActualQty);
+      }
+      return getWarehouseTotalQty(item);
+    }
+
+    // 精準計算盤差（以正式實盤數量減去帳面數量）：保留至小數點後四位
+    function calcDiscrepancy(finalActualQty, systemQty) {
+      return round4((finalActualQty ?? systemQty ?? 0) - (systemQty ?? 0));
+    }
+
+    // 將各種常見日期字串 / 民國年 / 純數字 / Excel 序號正規化為 YYYY-MM-DD
+    function normalizeDateString(raw) {
+      if (raw === undefined || raw === null) return '';
+      let str = String(raw).replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+      if (!str) return '';
+
+      // 1. 處理 Excel 5位數日期序號 (約 1982 ~ 2091 年之間)
+      if (/^\d{5}(\.\d+)?$/.test(str)) {
+        const serial = Math.floor(Number(str));
+        if (serial > 30000 && serial < 70000) {
+          const utcDays = serial - 25569;
+          const dateObj = new Date(utcDays * 86400 * 1000);
+          if (!isNaN(dateObj.getTime())) {
+            const y = dateObj.getUTCFullYear();
+            const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+            const d = String(dateObj.getUTCDate()).padStart(2, '0');
+            return `${y}-${m}-${d}`;
+          }
+        }
+      }
+
+      // 2. 去除後方時間戳記 (例如 "2027/08/08 00:00:00" -> "2027/08/08")
+      str = str.split(/[\sT]+/)[0].trim();
+
+      // 3. 處理純 8 碼西元年 (YYYYMMDD -> YYYY-MM-DD)
+      if (/^\d{8}$/.test(str)) {
+        const y = str.slice(0, 4);
+        const m = str.slice(4, 6);
+        const d = str.slice(6, 8);
+        if (Number(m) >= 1 && Number(m) <= 12 && Number(d) >= 1 && Number(d) <= 31) {
+          return `${y}-${m}-${d}`;
+        }
+      }
+
+      // 4. 處理純 7 碼民國年 (YYYMMDD -> YYYY-MM-DD，例如 1160808 -> 2027-08-08)
+      if (/^\d{7}$/.test(str)) {
+        const rocY = Number(str.slice(0, 3));
+        const m = str.slice(3, 5);
+        const d = str.slice(5, 7);
+        if (rocY >= 50 && rocY <= 250 && Number(m) >= 1 && Number(m) <= 12 && Number(d) >= 1 && Number(d) <= 31) {
+          return `${rocY + 1911}-${m}-${d}`;
+        }
+      }
+
+      // 5. 處理中文年月日 (2027年8月8日 或 民國116年8月8日)
+      str = str.replace(/^民國\s*/, '').replace(/[年月]/g, '-').replace(/日/g, '').trim();
+
+      // 6. 處理帶有 /、-、. 分隔符的日期
+      const parts = str.split(/[\/\-\.]/).map(p => p.trim()).filter(Boolean);
+      if (parts.length === 3 && parts.every(p => /^\d+$/.test(p))) {
+        let year = '';
+        let month = '';
+        let day = '';
+
+        if (parts[0].length === 4) {
+          // YYYY-M-D 或 YYYY/MM/DD
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
+        } else if (parts[0].length === 3 && Number(parts[0]) >= 50 && Number(parts[0]) <= 250) {
+          // 民國年 YYY/MM/DD (例如 116/08/08)
+          year = String(Number(parts[0]) + 1911);
+          month = parts[1];
+          day = parts[2];
+        } else if (parts[2].length === 4) {
+          // 美式/歐式 MM/DD/YYYY 或 DD/MM/YYYY
+          year = parts[2];
+          if (Number(parts[0]) > 12) {
+            day = parts[0];
+            month = parts[1];
+          } else {
+            month = parts[0];
+            day = parts[1];
+          }
+        } else if (parts[2].length === 2 && Number(parts[0]) <= 12) {
+          // Excel 美式短日期 M/D/YY (例如 8/8/27 -> 2027-08-08)
+          year = '20' + parts[2];
+          month = parts[0];
+          day = parts[1];
+        } else if (parts[0].length === 2 && Number(parts[0]) > 12) {
+          // 兩位數年份在前 YY/MM/DD (例如 27/08/08 -> 2027-08-08)
+          year = '20' + parts[0];
+          month = parts[1];
+          day = parts[2];
+        }
+
+        const mNum = Number(month);
+        const dNum = Number(day);
+        if (year.length === 4 && mNum >= 1 && mNum <= 12 && dNum >= 1 && dNum <= 31) {
+          return `${year}-${String(mNum).padStart(2, '0')}-${String(dNum).padStart(2, '0')}`;
+        }
+      }
+
+      return '';
     }
 
     // 取得公司對應色彩主題
@@ -807,7 +978,7 @@
       if (!item) return;
       const targetState = !item.lockedByBuyer;
       db.ref(`inventory_items/${id}/lockedByBuyer`).set(targetState);
-      recordAuditLog(item, '採購盤點鎖定狀態', targetState ? '未鎖定 → 已盤點(鎖定)' : '已盤點(鎖定) → 解除鎖定');
+      recordAuditLog(item, '採購盤點鎖定狀態', targetState ? '未鎖定 → 已盤點(鎖定批號/效期/實盤數量)' : '已盤點(鎖定) → 解除鎖定');
     }
 
     function renderAuditorOptions() {
@@ -1203,8 +1374,8 @@
         const matchesCompany = (companyFilter === 'all') || ((item.company || '') === companyFilter);
         const matchesCategory = (categoryFilter === 'all') || ((item.category || '') === categoryFilter);
         let matchesStatus = true;
-        const totalActual = getTotalActualQty(item);
-        const diff = calcDiscrepancy(totalActual, item.systemQty);
+        const finalActual = getFinalActualQty(item);
+        const diff = calcDiscrepancy(finalActual, item.systemQty);
         const hasDiscrepancy = (diff !== 0);
         
         if (filter === 'pending_warehouse') matchesStatus = !item.warehouseCompleted;
@@ -1266,12 +1437,15 @@
         const isAbnormal = isAudited && item.condition === 'abnormal';
         const isChecked = selectedItemIds.has(item.id);
         const isExpanded = expandedItemIds.has(item.id);
-        const isExpired = item.expDate && item.expDate < todayStr;
+        const normalizedExp = normalizeDateString(item.expDate) || item.expDate || '';
+        const isExpired = normalizedExp && normalizedExp < todayStr;
 
         const intactQty = getIntactQty(item);
         const looseQty = getLooseQty(item);
-        const totalActual = getTotalActualQty(item);
-        const diff = calcDiscrepancy(totalActual, item.systemQty);
+        const warehouseTotal = getWarehouseTotalQty(item);
+        const finalActual = getFinalActualQty(item);
+        const isOfficialAdjusted = hasOfficialOverride(item);
+        const diff = calcDiscrepancy(finalActual, item.systemQty);
         const hasDiscrepancy = (diff !== 0);
         const hasLooseInfo = looseQty > 0 || Boolean((item.looseLocation || '').trim());
 
@@ -1280,10 +1454,13 @@
         const cardOuterBorder = isAbnormal ? 'border-rose-300' : hasDiscrepancy ? 'border-amber-300' : 'border-slate-200';
         const cardBgClass = isAbnormal ? 'bg-rose-50/40' : companyTheme.cardBg;
 
-        // 權限控管：只有倉管與管理員在未鎖定時可修改物流與數量欄位（品管與採購僅可唯讀檢視）
+        // 權限控管：
+        // 1. 倉管與管理員在未鎖定時可修改儲位與倉管初盤數量
         const canEditWarehouse = (currentRole === 'warehouse' || currentRole === 'admin') && !isGlobalLocked && !item.lockedByBuyer;
+        // 2. 採購與管理員在未鎖定時可修改採購覆核區塊（批號、有效日期、正式實盤數量、覆核說明）
+        const canEditBuyer = (currentRole === 'buyer' || currentRole === 'admin') && !isGlobalLocked && !item.lockedByBuyer;
         const isQcLocked = isGlobalLocked;
-        const isBuyerLocked = isGlobalLocked;
+        const isBuyerLockToggleDisabled = isGlobalLocked;
 
         return `
           <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
@@ -1349,6 +1526,16 @@
                       </div>
                     ` : ''}
 
+                    <!-- 6. 有效日期標籤 -->
+                    ${normalizedExp ? `
+                      <div class="relative group inline-block">
+                        <span class="text-xs ${isExpired ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-50 text-sky-800 border-sky-200'} border px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-regular fa-calendar-check mr-1"></i>${normalizedExp}</span>
+                        <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
+                          有效日期${isExpired ? ' (已過期)' : ''}
+                        </div>
+                      </div>
+                    ` : ''}
+
                     ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
                     ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
                   </div>
@@ -1404,20 +1591,22 @@
                   </div>
                 </div>
 
-                <div class="grid grid-cols-2 gap-2">
-                  <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                    <input type="text" value="${item.batchNo || ''}" ${!canEditWarehouse ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-slate-300 rounded px-2 py-1 text-xs font-mono focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
+                <!-- 倉管與品管檢視：產品批號與有效日期為唯讀資訊（編輯功能移至下方採購覆核區塊） -->
+                ${(currentRole !== 'buyer' && currentRole !== 'admin') ? `
+                  <div class="grid grid-cols-2 gap-2">
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
+                      <div class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs font-mono bg-slate-100 text-slate-700">${item.batchNo || '未填寫'}</div>
+                    </div>
+                    <div>
+                      <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
+                      <div class="w-full border ${isExpired ? 'border-rose-300 bg-rose-50 text-rose-700 font-bold' : 'border-slate-200 bg-slate-100 text-slate-700'} rounded px-2 py-1.5 text-xs font-mono">${normalizedExp || '未填寫'}</div>
+                    </div>
                   </div>
-                  <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                    <input type="date" value="${item.expDate || ''}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-slate-300'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
-                  </div>
-                </div>
+                  ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
+                ` : ''}
 
-                ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
-
-                <!-- 數量顯示與倉管輸入區 (品管與採購模式為唯讀檢視) -->
+                <!-- 數量顯示與倉管初盤輸入區 -->
                 <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2">
                   <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200/70">
                     <div>
@@ -1425,8 +1614,13 @@
                       <span class="font-bold text-slate-700">${item.systemQty} ${item.unit}</span>
                     </div>
                     <div>
-                      <span class="text-slate-500">實盤總數量：</span>
-                      <span class="font-black text-indigo-700 text-sm">${totalActual} ${item.unit}</span>
+                      <span class="text-slate-500">倉管初盤總數：</span>
+                      <span class="font-bold text-teal-700">${warehouseTotal} ${item.unit}</span>
+                    </div>
+                    <div>
+                      <span class="text-slate-500">正式實盤數量：</span>
+                      <span class="font-black text-indigo-700 text-sm">${finalActual} ${item.unit}</span>
+                      ${isOfficialAdjusted ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold ml-1">採購修訂</span>` : ''}
                     </div>
                   </div>
                   <div class="grid grid-cols-2 gap-2">
@@ -1446,7 +1640,7 @@
                       <div class="text-[11px] text-slate-500">
                         ${isWarehouseDone 
                           ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${item.warehouseAuditor || ''} ${item.warehouseTime || ''})</span>` 
-                          : `<span>確認儲位與數量後請點擊儲存：</span>`}
+                          : `<span>確認儲位與初盤數量後請點擊儲存：</span>`}
                       </div>
                       <div class="flex gap-1.5">
                         <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
@@ -1462,22 +1656,50 @@
                   ` : ''}
                 </div>
 
-                <!-- 採購覆核與鎖定控制 -->
+                <!-- 採購覆核與盤點鎖定區塊 (集中編輯：產品批號、有效日期、正式實盤數量、覆核說明，鎖定時一併鎖住) -->
                 ${(currentRole === 'buyer' || currentRole === 'admin') ? `
-                  <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-lg text-xs space-y-2">
-                    <div class="flex items-center justify-between">
-                      <span class="font-bold text-amber-900"><i class="fa-solid fa-cart-shopping mr-1"></i> 採購覆核與盤點鎖定：</span>
-                      <button onclick="toggleBuyerLock('${item.id}')" ${isBuyerLocked ? 'disabled' : ''} class="px-2.5 py-1 rounded text-xs font-bold ${item.lockedByBuyer ? 'bg-rose-600 text-white' : 'bg-amber-600 text-white'} shadow-sm transition">
+                  <div class="bg-amber-50/85 border border-amber-200 p-2.5 rounded-lg text-xs space-y-2.5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                      <span class="font-bold text-amber-900">
+                        <i class="fa-solid fa-cart-shopping mr-1"></i> 採購覆核與正式盤點作業：
+                        ${item.lockedByBuyer ? '<span class="text-[10px] text-rose-700 font-bold ml-1">(已鎖定唯讀，需解鎖方可修改)</span>' : ''}
+                      </span>
+                      <button onclick="toggleBuyerLock('${item.id}')" ${isBuyerLockToggleDisabled ? 'disabled' : ''} class="px-2.5 py-1 rounded text-xs font-bold ${item.lockedByBuyer ? 'bg-rose-600 hover:bg-rose-700 text-white' : 'bg-amber-600 hover:bg-amber-700 text-white'} shadow-sm transition">
                         <i class="fa-solid ${item.lockedByBuyer ? 'fa-lock' : 'fa-lock-open'} mr-1"></i>${item.lockedByBuyer ? '解鎖 (取消已盤點)' : '鎖定確認 (標記已盤點)'}
                       </button>
                     </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">產品批號：</label>
+                        <input type="text" value="${item.batchNo || ''}" ${!canEditBuyer ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-amber-300 rounded px-2 py-1 text-xs font-mono bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">有效日期：</label>
+                        <input type="date" value="${normalizedExp}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : 'border-amber-300 bg-white'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                      </div>
+                      <div>
+                        <div class="flex items-center justify-between mb-0.5">
+                          <label class="text-[11px] font-bold text-amber-900">正式實盤數量 (${item.unit})：</label>
+                          ${isOfficialAdjusted && canEditBuyer ? `
+                            <button onclick="resetOfficialActualQty('${item.id}')" class="text-[10px] text-amber-700 underline hover:text-amber-950" title="恢復帶入倉管初盤總數">帶入初盤</button>
+                          ` : ''}
+                        </div>
+                        <input type="number" step="any" value="${finalActual}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateOfficialActualQty('${item.id}', this.value)" class="w-full border border-amber-400 bg-white rounded px-2 py-1 text-xs font-black text-amber-950 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                      </div>
+                    </div>
+
+                    ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
+
                     <div>
-                      <input type="text" value="${item.buyerNote || ''}" ${isBuyerLocked ? 'disabled' : ''} placeholder="採購對接說明 (如: 安排退貨、通知廠商補發...)" onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500">
+                      <label class="block text-[11px] font-bold text-amber-900 mb-0.5">採購覆核說明：</label>
+                      <input type="text" value="${item.buyerNote || ''}" ${!canEditBuyer ? 'disabled' : ''} placeholder="採購對接說明 (如: 正式盤點差異原因、安排退貨、通知廠商補發...)" onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-amber-100/60 disabled:text-slate-500">
                     </div>
                   </div>
-                ` : (item.buyerNote ? `
-                  <div class="text-xs bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-900">
-                    <span class="font-bold">採購覆核說明：</span> ${item.buyerNote}
+                ` : ((item.buyerNote || isOfficialAdjusted) ? `
+                  <div class="text-xs bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-900 space-y-1">
+                    ${isOfficialAdjusted ? `<div><span class="font-bold">採購正式實盤數量：</span> <span class="font-black">${finalActual} ${item.unit}</span> <span class="text-[11px] text-amber-700">(倉管初盤：${warehouseTotal} ${item.unit})</span></div>` : ''}
+                    ${item.buyerNote ? `<div><span class="font-bold">採購覆核說明：</span> ${item.buyerNote}</div>` : ''}
                   </div>
                 ` : '')}
 
@@ -1602,6 +1824,7 @@
       if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
+      if (item.lockedByBuyer) return;
 
       const oldIntact = getIntactQty(item);
       const oldLoose = getLooseQty(item);
@@ -1609,7 +1832,7 @@
       const looseEl = document.getElementById(`looseInput_${id}`);
       const intact = intactEl ? round4(parseFloat(intactEl.value) || 0) : oldIntact;
       const loose = looseEl ? round4(parseFloat(looseEl.value) || 0) : oldLoose;
-      const totalActual = round4(intact + loose);
+      const warehouseTotal = round4(intact + loose);
 
       if (intact !== oldIntact) {
         recordAuditLog(item, '修改完整貨數量', `${oldIntact} → ${intact} ${item.unit}`);
@@ -1621,48 +1844,47 @@
       db.ref(`inventory_items/${id}`).update({
         intactQty: intact,
         looseQty: loose,
-        actualQty: totalActual,
+        actualQty: warehouseTotal,
         hasLooseStock: loose > 0 ? '是' : '否',
         warehouseCompleted: true,
         warehouseAuditor: selectedAuditor,
         warehouseTime: new Date().toLocaleString('zh-TW')
       });
 
-      recordAuditLog(item, item.warehouseCompleted ? '更新初盤紀錄' : '儲存初盤紀錄', `完整貨 ${intact} + 散貨 ${loose} = 實盤總數 ${totalActual} ${item.unit}`);
+      recordAuditLog(item, item.warehouseCompleted ? '更新初盤紀錄' : '儲存初盤紀錄', `完整貨 ${intact} + 散貨 ${loose} = 倉管初盤總數 ${warehouseTotal} ${item.unit}`);
     }
 
     // 重置倉管初盤狀態
     function resetWarehouseCheck(id) {
       if (isGlobalLocked) return;
-      if (!confirm('確定要重置此品項的「已初盤」狀態嗎？')) return;
       const item = inventoryData.find(i => i.id === id);
+      if (!item || item.lockedByBuyer) return;
+      if (!confirm('確定要重置此品項的「已初盤」狀態嗎？')) return;
       db.ref(`inventory_items/${id}`).update({
         warehouseCompleted: false,
         warehouseAuditor: '',
         warehouseTime: ''
       });
-      if (item) {
-        recordAuditLog(item, '重置初盤狀態', '已初盤 → 待初盤');
-      }
+      recordAuditLog(item, '重置初盤狀態', '已初盤 → 待初盤');
     }
 
-    // 更新完整貨與散貨數量，自動加總實盤總數量並連動品管「是否有散貨」欄位
+    // 更新完整貨與散貨數量，自動加總倉管初盤總數並連動品管「是否有散貨」欄位
     function updateQuantities(id, type, rawValue) {
       if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
-      if (!item) return;
+      if (!item || item.lockedByBuyer) return;
 
       const oldIntact = getIntactQty(item);
       const oldLoose = getLooseQty(item);
       const parsedVal = round4(parseFloat(rawValue) || 0);
       const intact = type === 'intact' ? parsedVal : oldIntact;
       const loose = type === 'loose' ? parsedVal : oldLoose;
-      const totalActual = round4(intact + loose);
+      const warehouseTotal = round4(intact + loose);
 
       const updates = {
         intactQty: intact,
         looseQty: loose,
-        actualQty: totalActual
+        actualQty: warehouseTotal
       };
 
       if (type === 'intact' && intact !== oldIntact) {
@@ -1678,15 +1900,54 @@
       db.ref(`inventory_items/${id}`).update(updates);
     }
 
+    // 採購修改正式實盤數量
+    function updateOfficialActualQty(id, rawValue) {
+      if (isGlobalLocked) return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item || item.lockedByBuyer) return;
+      if (currentRole !== 'buyer' && currentRole !== 'admin') return;
+
+      const oldFinal = getFinalActualQty(item);
+      const newVal = round4(parseFloat(rawValue) || 0);
+
+      db.ref(`inventory_items/${id}/officialActualQty`).set(newVal);
+
+      if (oldFinal !== newVal) {
+        recordAuditLog(item, '修改正式實盤數量', `${oldFinal} → ${newVal} ${item.unit}`);
+      }
+    }
+
+    // 採購一鍵恢復帶入倉管初盤總數
+    function resetOfficialActualQty(id) {
+      if (isGlobalLocked) return;
+      const item = inventoryData.find(i => i.id === id);
+      if (!item || item.lockedByBuyer) return;
+      if (currentRole !== 'buyer' && currentRole !== 'admin') return;
+
+      const oldFinal = getFinalActualQty(item);
+      const warehouseTotal = getWarehouseTotalQty(item);
+
+      db.ref(`inventory_items/${id}/officialActualQty`).set(null);
+
+      if (oldFinal !== warehouseTotal) {
+        recordAuditLog(item, '恢復正式實盤為倉管初盤數', `${oldFinal} → ${warehouseTotal} ${item.unit}`);
+      }
+    }
+
     function updateItemField(id, field, value) {
       if (isGlobalLocked) return;
       const item = inventoryData.find(i => i.id === id);
       if (!item) return;
 
-      const oldVal = (item[field] === undefined || item[field] === null) ? '' : String(item[field]);
-      const newVal = (value === undefined || value === null) ? '' : String(value);
+      // 採購鎖定後，禁止修改儲位、批號、有效日期、採購覆核說明
+      const buyerLockedFields = ['location', 'looseLocation', 'batchNo', 'expDate', 'buyerNote'];
+      if (item.lockedByBuyer && buyerLockedFields.includes(field)) return;
 
-      db.ref(`inventory_items/${id}/${field}`).set(value);
+      const normalizedVal = field === 'expDate' ? (normalizeDateString(value) || value) : value;
+      const oldVal = (item[field] === undefined || item[field] === null) ? '' : String(item[field]);
+      const newVal = (normalizedVal === undefined || normalizedVal === null) ? '' : String(normalizedVal);
+
+      db.ref(`inventory_items/${id}/${field}`).set(normalizedVal);
 
       if (oldVal !== newVal) {
         const label = FIELD_LABEL_MAP[field] || field;
@@ -1882,7 +2143,7 @@
       const abnormal = inventoryData.filter(i => !!i.audited && i.condition === 'abnormal').length;
       const buyerLocked = inventoryData.filter(i => !!i.lockedByBuyer).length;
       const buyerPending = total - buyerLocked;
-      const discrepancy = inventoryData.filter(i => calcDiscrepancy(getTotalActualQty(i), i.systemQty) !== 0).length;
+      const discrepancy = inventoryData.filter(i => calcDiscrepancy(getFinalActualQty(i), i.systemQty) !== 0).length;
 
       let dashHtml = '';
       let progTitle = '';
@@ -2047,6 +2308,7 @@
     function handleFileSelect(event) {
       const file = event.target.files[0];
       if (!file) return;
+      currentUploadFileName = (file.name || '').toLowerCase();
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -2056,31 +2318,36 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Excel/CSV 解析
+    // Excel / CSV 解析 (支援多種日期格式正規化)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
       let workbook;
       
       try {
-        const readOpts = { type: 'string' };
-        if (encodingChoice === 'Big5') {
-          const decoder = new TextDecoder('big5');
-          workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), readOpts);
-        } else if (encodingChoice === 'UTF-8') {
-          const decoder = new TextDecoder('utf-8');
-          workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), readOpts);
+        const isExcelBinary = currentUploadFileName.endsWith('.xlsx') || currentUploadFileName.endsWith('.xls');
+        if (isExcelBinary) {
+          workbook = XLSX.read(currentRawArrayBuffer, { type: 'array' });
         } else {
-          try {
-            const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
-            workbook = XLSX.read(decoderUtf8.decode(currentRawArrayBuffer), readOpts);
-          } catch(e) {
-            const decoderBig5 = new TextDecoder('big5');
-            workbook = XLSX.read(decoderBig5.decode(currentRawArrayBuffer), readOpts);
+          const readOpts = { type: 'string' };
+          if (encodingChoice === 'Big5') {
+            const decoder = new TextDecoder('big5');
+            workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), readOpts);
+          } else if (encodingChoice === 'UTF-8') {
+            const decoder = new TextDecoder('utf-8');
+            workbook = XLSX.read(decoder.decode(currentRawArrayBuffer), readOpts);
+          } else {
+            try {
+              const decoderUtf8 = new TextDecoder('utf-8', { fatal: true });
+              workbook = XLSX.read(decoderUtf8.decode(currentRawArrayBuffer), readOpts);
+            } catch(e) {
+              const decoderBig5 = new TextDecoder('big5');
+              workbook = XLSX.read(decoderBig5.decode(currentRawArrayBuffer), readOpts);
+            }
           }
         }
       } catch(err) {
-        alert('解析檔案失敗，請檢查編碼格式');
+        alert('解析檔案失敗，請檢查檔案或編碼格式');
         return;
       }
 
@@ -2104,7 +2371,7 @@
       let qtyIdx = headers.findIndex(h => h.includes('帳面') || h.includes('數量') || h.includes('庫存'));
       let unitIdx = headers.findIndex(h => h.includes('單位'));
       let batchIdx = headers.findIndex(h => h.includes('批號') || h.includes('批次'));
-      let expIdx = headers.findIndex(h => h.includes('有效') || h.includes('到期') || h.includes('期限') || h.includes('日期'));
+      let expIdx = headers.findIndex(h => h.includes('效期') || h.includes('有效') || h.includes('到期') || h.includes('期限') || h.includes('日期'));
       let compIdx = headers.findIndex(h => h.includes('公司') || h.includes('廠區') || h.includes('company'));
 
       if (skuIdx === -1) skuIdx = 0;
@@ -2131,13 +2398,8 @@
         let rawQty = String(row[qtyIdx] || '0').replace(/[^0-9.-]/g, '');
         let parsedQty = round4(parseFloat(rawQty) || 0);
 
-        let expDateStr = String(row[expIdx] || '').trim();
-        if (expDateStr.includes('/')) {
-          const parts = expDateStr.split('/');
-          if (parts.length === 3) {
-            expDateStr = `${parts[0]}-${parts[1].padStart(2, '0')}-${parts[2].padStart(2, '0')}`;
-          }
-        }
+        // 正規化有效日期為 YYYY-MM-DD
+        const expDateStr = normalizeDateString(row[expIdx]);
 
         const compVal = compIdx !== -1 ? String(row[compIdx] !== undefined ? row[compIdx] : '').trim() : '';
 
@@ -2154,6 +2416,7 @@
           intactQty: parsedQty,
           looseQty: 0,
           actualQty: parsedQty,
+          officialActualQty: null,
           unit: String(row[unitIdx] || 'kg').trim(),
           batchNo: String(row[batchIdx] || '').trim(),
           expDate: expDateStr,
@@ -2174,12 +2437,13 @@
       }
 
       document.getElementById('parsedCount').innerText = pendingParsedData.length;
-      document.getElementById('importPreviewTable').innerHTML = pendingParsedData.slice(0, 5).map(item => `
+      document.getElementById('importPreviewTable').innerHTML = pendingParsedData.slice(0, 6).map(item => `
         <tr class="border-b">
           <td class="p-1 font-mono">${item.sku}</td>
-          <td class="p-1 truncate max-w-[100px]">${item.name}</td>
+          <td class="p-1 truncate max-w-[90px]">${item.name}</td>
           <td class="p-1 font-semibold">${item.category || '-'}</td>
           <td class="p-1 font-mono">${item.batchNo || '-'}</td>
+          <td class="p-1 font-mono ${item.expDate ? 'text-emerald-700 font-bold' : 'text-slate-400'}">${item.expDate || '-'}</td>
           <td class="p-1">${item.company || '-'}</td>
         </tr>
       `).join('');
@@ -2208,55 +2472,273 @@
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
     }
 
-    function exportToCSV() {
+    // 客製化匯出視窗控制
+    function openExportModal() {
       if (inventoryData.length === 0) {
         alert('目前無可匯出的資料！');
         return;
       }
-      let csv = '\uFEFFSKU編號,品名,類別,完整貨儲存地點,散貨儲存地點,所屬公司,產品批號,有效日期,帳面數量,完整貨數量,散貨數量,實盤總數量,盤差,單位,初盤狀態,初盤人員,初盤時間,包裝是否完好,是否有散貨,品質(包裝樣式/顏色/風味/流動性)正常,品管檢查狀態,整體品質性狀,異常處置方式,採購覆核說明,已盤點(採購鎖定),品管檢查人員,品管檢查時間,品管備註,是否有照片\n';
-      inventoryData.forEach(item => {
-        const intactQty = getIntactQty(item);
-        const looseQty = getLooseQty(item);
-        const totalActual = getTotalActualQty(item);
-        const diff = calcDiscrepancy(totalActual, item.systemQty);
-        csv += [
-          `"${item.sku || ''}"`,
-          `"${item.name || ''}"`,
-          `"${item.category || ''}"`,
-          `"${item.location || ''}"`,
-          `"${item.looseLocation || ''}"`,
-          `"${item.company || ''}"`,
-          `"${item.batchNo || ''}"`,
-          `"${item.expDate || ''}"`,
-          item.systemQty,
-          intactQty,
-          looseQty,
-          totalActual,
-          diff,
-          `"${item.unit || ''}"`,
-          item.warehouseCompleted ? '已初盤' : '待初盤',
-          `"${item.warehouseAuditor || ''}"`,
-          `"${item.warehouseTime || ''}"`,
-          `"${item.pkgIntact || '未判定'}"`,
-          `"${item.hasLooseStock || '未判定'}"`,
-          `"${item.qualityCheck || '未判定'}"`,
-          item.audited ? '已檢查' : '待檢查',
-          item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定',
-          `"${item.abnormalAction || ''}"`,
-          `"${(item.buyerNote || '').replace(/"/g, '""')}"`,
-          item.lockedByBuyer ? '是' : '否',
-          `"${item.auditor || ''}"`,
-          `"${item.auditTime || ''}"`,
-          `"${(item.note || '').replace(/"/g, '""')}"`,
-          item.photo ? '是' : '否'
-        ].join(',') + '\n';
-      });
 
+      const compSelect = document.getElementById('exportCompanySelect');
+      const catSelect = document.getElementById('exportCategorySelect');
+      const roleBadge = document.getElementById('exportRoleFormatBadge');
+      const colPreview = document.getElementById('exportColumnPreviewText');
+      const adminOption = document.getElementById('adminExportLogOption');
+
+      const companies = [...new Set(inventoryData.map(i => (i.company || '').trim()).filter(Boolean))].sort();
+      const categories = [...new Set(inventoryData.map(i => (i.category || '').trim()).filter(Boolean))];
+
+      const currentCompFilter = document.getElementById('companyFilter')?.value || 'all';
+      const currentCatFilter = document.getElementById('categoryFilter')?.value || 'all';
+
+      compSelect.innerHTML = `<option value="all">全部公司</option>` +
+        companies.map(c => `<option value="${c}" ${c === currentCompFilter ? 'selected' : ''}>${c}</option>`).join('');
+
+      catSelect.innerHTML = `<option value="all">全部類別</option>` +
+        categories.map(c => `<option value="${c}" ${c === currentCatFilter ? 'selected' : ''}>${c}</option>`).join('');
+
+      const roleFormatInfo = {
+        warehouse: {
+          label: '倉管人員專屬報表',
+          badgeClass: 'bg-emerald-100 text-emerald-800',
+          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、完整貨數量、散貨數量、倉管初盤總數、單位、初盤狀態、初盤人員、初盤時間'
+        },
+        qc: {
+          label: '品管人員專屬報表',
+          badgeClass: 'bg-indigo-100 text-indigo-800',
+          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、包裝是否完好、是否有散貨、品質(包裝樣式/顏色/風味/流動性)正常、品管檢查狀態、整體品質性狀、異常處置方式、品管備註、檢查人員、檢查時間、是否有照片'
+        },
+        buyer: {
+          label: '採購人員專屬報表',
+          badgeClass: 'bg-amber-100 text-amber-800',
+          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、帳面數量、倉管初盤總數、正式實盤數量、盤差、單位、採購覆核說明、已盤點(採購鎖定)'
+        },
+        admin: {
+          label: '管理員完整盤點總表',
+          badgeClass: 'bg-purple-100 text-purple-800',
+          cols: '包含上述所有部門（倉管初盤 + 品管檢查 + 採購正式實盤與鎖定）完整欄位'
+        }
+      };
+
+      const info = roleFormatInfo[currentRole] || roleFormatInfo.admin;
+      roleBadge.innerText = info.label;
+      roleBadge.className = `px-2.5 py-0.5 rounded-full font-bold ${info.badgeClass}`;
+      colPreview.innerText = info.cols;
+
+      if (currentRole === 'admin') {
+        adminOption.classList.remove('hidden');
+      } else {
+        adminOption.classList.add('hidden');
+      }
+
+      updateExportPreviewCount();
+      document.getElementById('exportModal').classList.remove('hidden');
+    }
+
+    function closeExportModal() {
+      document.getElementById('exportModal').classList.add('hidden');
+    }
+
+    function getFilteredExportItems() {
+      const comp = document.getElementById('exportCompanySelect')?.value || 'all';
+      const cat = document.getElementById('exportCategorySelect')?.value || 'all';
+      return inventoryData.filter(item => {
+        const matchComp = (comp === 'all') || ((item.company || '').trim() === comp);
+        const matchCat = (cat === 'all') || ((item.category || '').trim() === cat);
+        return matchComp && matchCat;
+      });
+    }
+
+    function updateExportPreviewCount() {
+      const matched = getFilteredExportItems();
+      const countEl = document.getElementById('exportMatchCount');
+      const btn = document.getElementById('confirmExportBtn');
+      if (countEl) countEl.innerText = matched.length;
+      if (btn) btn.disabled = matched.length === 0;
+    }
+
+    function csvEscape(val) {
+      if (val === undefined || val === null) return '""';
+      return `"${String(val).replace(/"/g, '""')}"`;
+    }
+
+    function executeCustomExport() {
+      const items = getFilteredExportItems();
+      if (items.length === 0) {
+        alert('所選公司與類別條件下無可匯出的資料！');
+        return;
+      }
+
+      const selectedComp = document.getElementById('exportCompanySelect').value;
+      const selectedCat = document.getElementById('exportCategorySelect').value;
+      const includeLogs = currentRole === 'admin' && document.getElementById('includeLogCountCheckbox')?.checked;
+
+      let headers = [];
+      let rows = [];
+      let roleFilePrefix = '盤點報表';
+
+      if (currentRole === 'warehouse') {
+        roleFilePrefix = '倉管初盤報表';
+        headers = [
+          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '完整貨儲存地點', '散貨儲存地點', '完整貨數量', '散貨數量', '倉管初盤總數', '單位',
+          '初盤狀態', '初盤人員', '初盤時間'
+        ];
+        rows = items.map(item => {
+          const intactQty = getIntactQty(item);
+          const looseQty = getLooseQty(item);
+          const warehouseTotal = getWarehouseTotalQty(item);
+          const expStr = normalizeDateString(item.expDate) || item.expDate || '';
+          return [
+            csvEscape(item.sku),
+            csvEscape(item.name),
+            csvEscape(item.category),
+            csvEscape(item.company),
+            csvEscape(item.batchNo),
+            csvEscape(expStr),
+            csvEscape(item.location),
+            csvEscape(item.looseLocation),
+            intactQty,
+            looseQty,
+            warehouseTotal,
+            csvEscape(item.unit),
+            csvEscape(item.warehouseCompleted ? '已初盤' : '待初盤'),
+            csvEscape(item.warehouseAuditor),
+            csvEscape(item.warehouseTime)
+          ].join(',');
+        });
+      } else if (currentRole === 'qc') {
+        roleFilePrefix = '品管檢查報表';
+        headers = [
+          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '完整貨儲存地點', '散貨儲存地點', '包裝是否完好', '是否有散貨',
+          '品質(包裝樣式/顏色/風味/流動性)正常', '品管檢查狀態', '整體品質性狀',
+          '異常處置方式', '品管備註', '品管檢查人員', '品管檢查時間', '是否有照片'
+        ];
+        rows = items.map(item => {
+          const expStr = normalizeDateString(item.expDate) || item.expDate || '';
+          return [
+            csvEscape(item.sku),
+            csvEscape(item.name),
+            csvEscape(item.category),
+            csvEscape(item.company),
+            csvEscape(item.batchNo),
+            csvEscape(expStr),
+            csvEscape(item.location),
+            csvEscape(item.looseLocation),
+            csvEscape(item.pkgIntact || '未判定'),
+            csvEscape(item.hasLooseStock || '未判定'),
+            csvEscape(item.qualityCheck || '未判定'),
+            csvEscape(item.audited ? '已檢查' : '待檢查'),
+            csvEscape(item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定'),
+            csvEscape(item.abnormalAction),
+            csvEscape(item.note),
+            csvEscape(item.auditor),
+            csvEscape(item.auditTime),
+            csvEscape(item.photo ? '是' : '否')
+          ].join(',');
+        });
+      } else if (currentRole === 'buyer') {
+        roleFilePrefix = '採購盤點報表';
+        headers = [
+          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '完整貨儲存地點', '散貨儲存地點', '帳面數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
+          '採購覆核說明', '已盤點(採購鎖定)'
+        ];
+        rows = items.map(item => {
+          const warehouseTotal = getWarehouseTotalQty(item);
+          const finalActual = getFinalActualQty(item);
+          const diff = calcDiscrepancy(finalActual, item.systemQty);
+          const expStr = normalizeDateString(item.expDate) || item.expDate || '';
+          return [
+            csvEscape(item.sku),
+            csvEscape(item.name),
+            csvEscape(item.category),
+            csvEscape(item.company),
+            csvEscape(item.batchNo),
+            csvEscape(expStr),
+            csvEscape(item.location),
+            csvEscape(item.looseLocation),
+            item.systemQty,
+            warehouseTotal,
+            finalActual,
+            diff,
+            csvEscape(item.unit),
+            csvEscape(item.buyerNote),
+            csvEscape(item.lockedByBuyer ? '是' : '否')
+          ].join(',');
+        });
+      } else {
+        // Admin 完整盤點總表
+        roleFilePrefix = '年度庫存盤點總表';
+        headers = [
+          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '完整貨儲存地點', '散貨儲存地點',
+          '帳面數量', '完整貨數量', '散貨數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
+          '初盤狀態', '初盤人員', '初盤時間',
+          '包裝是否完好', '是否有散貨', '品質(包裝樣式/顏色/風味/流動性)正常',
+          '品管檢查狀態', '整體品質性狀', '異常處置方式', '品管檢查人員', '品管檢查時間', '品管備註', '是否有照片',
+          '採購覆核說明', '已盤點(採購鎖定)'
+        ];
+        if (includeLogs) headers.push('變更紀錄次數');
+
+        rows = items.map(item => {
+          const intactQty = getIntactQty(item);
+          const looseQty = getLooseQty(item);
+          const warehouseTotal = getWarehouseTotalQty(item);
+          const finalActual = getFinalActualQty(item);
+          const diff = calcDiscrepancy(finalActual, item.systemQty);
+          const expStr = normalizeDateString(item.expDate) || item.expDate || '';
+          const logCount = (itemLogsMap[item.id] || []).length;
+
+          const rowCols = [
+            csvEscape(item.sku),
+            csvEscape(item.name),
+            csvEscape(item.category),
+            csvEscape(item.company),
+            csvEscape(item.batchNo),
+            csvEscape(expStr),
+            csvEscape(item.location),
+            csvEscape(item.looseLocation),
+            item.systemQty,
+            intactQty,
+            looseQty,
+            warehouseTotal,
+            finalActual,
+            diff,
+            csvEscape(item.unit),
+            csvEscape(item.warehouseCompleted ? '已初盤' : '待初盤'),
+            csvEscape(item.warehouseAuditor),
+            csvEscape(item.warehouseTime),
+            csvEscape(item.pkgIntact || '未判定'),
+            csvEscape(item.hasLooseStock || '未判定'),
+            csvEscape(item.qualityCheck || '未判定'),
+            csvEscape(item.audited ? '已檢查' : '待檢查'),
+            csvEscape(item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定'),
+            csvEscape(item.abnormalAction),
+            csvEscape(item.auditor),
+            csvEscape(item.auditTime),
+            csvEscape(item.note),
+            csvEscape(item.photo ? '是' : '否'),
+            csvEscape(item.buyerNote),
+            csvEscape(item.lockedByBuyer ? '是' : '否')
+          ];
+          if (includeLogs) rowCols.push(logCount);
+          return rowCols.join(',');
+        });
+      }
+
+      const csv = '\uFEFF' + headers.join(',') + '\n' + rows.join('\n') + '\n';
+      const compTag = selectedComp === 'all' ? '全部公司' : selectedComp;
+      const catTag = selectedCat === 'all' ? '全部類別' : selectedCat;
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = `年度庫存盤點總表_${new Date().toISOString().slice(0,10)}.csv`;
+      link.download = `${roleFilePrefix}_${compTag}_${catTag}_${new Date().toISOString().slice(0,10)}.csv`;
       link.click();
+
+      recordAuditLog(null, '匯出盤點報表', `格式：${roleFilePrefix} / 篩選：${compTag} · ${catTag} (共 ${items.length} 筆)`);
+      closeExportModal();
     }
 
     function downloadSampleCSV() {
