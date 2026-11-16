@@ -23,7 +23,7 @@
 <body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20 transition-colors duration-300">
 
   <!-- 頂部導覽列 (隨角色切換背景色) -->
-  <header id="appHeader" class="bg-indigo-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
+  <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
     <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
       <div class="flex items-center space-x-2 shrink-0">
         <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
@@ -79,13 +79,13 @@
         </select>
       </div>
       <div class="text-xs text-slate-500 flex items-center gap-2">
-        <span id="roleBadge" class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-bold">品管人員模式</span>
+        <span id="roleBadge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">倉管人員模式</span>
         <span id="syncStatus" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
         <span id="savedTimeNotice" class="font-semibold text-slate-700">連線中</span>
       </div>
     </div>
 
-    <!-- 動態儀表板 Dashboard (依不同部門權限顯示專屬統計數據) -->
+    <!-- 動態儀表板 Dashboard (依不同部門權限顯示專屬統計數據，點擊可直接篩選) -->
     <div id="dashboardContainer" class="mb-3"></div>
 
     <!-- 動態進度條 (依不同部門權限分開計算進度) -->
@@ -108,7 +108,8 @@
           <option value="all">全部狀態</option>
         </select>
         <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
-          <option value="20" selected>每頁 20 筆</option>
+          <option value="5" selected>每頁 5 筆</option>
+          <option value="20">每頁 20 筆</option>
           <option value="50">每頁 50 筆</option>
           <option value="100">每頁 100 筆</option>
           <option value="all">全部顯示</option>
@@ -140,7 +141,7 @@
 
     <!-- 分頁導覽控制列 -->
     <div id="paginationControls" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-      <div id="paginationInfo" class="text-slate-600 font-medium">顯示第 1 - 20 筆，共 0 筆</div>
+      <div id="paginationInfo" class="text-slate-600 font-medium">顯示第 1 - 5 筆，共 0 筆</div>
       <div class="flex items-center gap-1.5">
         <button id="prevPageBtn" onclick="changePage(currentPage - 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
           <i class="fa-solid fa-chevron-left mr-1"></i>上一頁
@@ -179,7 +180,7 @@
       <div class="space-y-3 text-xs">
         <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5 flex items-center justify-between">
           <span class="text-slate-600 font-semibold">目前匯出權限格式：</span>
-          <span id="exportRoleFormatBadge" class="px-2.5 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-800">品管人員專屬報表</span>
+          <span id="exportRoleFormatBadge" class="px-2.5 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-800">倉管人員專屬報表</span>
         </div>
 
         <div class="grid grid-cols-2 gap-2.5">
@@ -270,24 +271,25 @@
     </div>
   </div>
 
-  <!-- 人員與權限管理 Modal -->
+  <!-- 人員與權限管理 Modal (支援調整人員順序) -->
   <div id="personnelModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-4 shadow-xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
         <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員與權限管理</h3>
         <button onclick="closePersonnelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div class="flex gap-2 mb-3">
+      <div class="flex gap-2 mb-2">
         <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
         <select id="newPersonRole" class="border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
-          <option value="qc">品管 (QC)</option>
           <option value="warehouse">倉管 (Warehouse)</option>
+          <option value="qc">品管 (QC)</option>
           <option value="buyer">採購 (Purchasing)</option>
           <option value="admin">管理員 (Admin)</option>
         </select>
         <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
       </div>
-      <div id="personnelList" class="max-h-48 overflow-y-auto divide-y divide-slate-100 border rounded-lg p-2 bg-slate-50"></div>
+      <p class="text-[11px] text-slate-500 mb-2"><i class="fa-solid fa-arrows-up-down mr-1 text-indigo-600"></i>點擊右側上下箭頭可調整選單排序（新裝置首次進入將預設首位倉管人員）</p>
+      <div id="personnelList" class="max-h-56 overflow-y-auto divide-y divide-slate-200/70 border rounded-lg p-2 bg-slate-50"></div>
     </div>
   </div>
 
@@ -475,15 +477,15 @@
     let companyColorMap = {};
     let currentPageItems = [];
     let currentPage = 1;
-    let pageSize = 20; // 預設每頁 20 筆
+    let pageSize = 5; // 預設每頁 5 筆
     let personnelList = [
-      { name: "張品管", role: "qc" },
       { name: "李倉管", role: "warehouse" },
+      { name: "張品管", role: "qc" },
       { name: "王採購", role: "buyer" },
       { name: "系統管理員", role: "admin" }
     ];
-    let selectedAuditor = "張品管";
-    let currentRole = "qc"; // 當前檢視/操作角色: 'qc' | 'warehouse' | 'buyer' | 'admin'
+    let selectedAuditor = "李倉管";
+    let currentRole = "warehouse"; // 預設倉管人員權限: 'qc' | 'warehouse' | 'buyer' | 'admin'
     let isAdminVerified = false; // 管理員密碼驗證狀態 (預設 8888)
     let isBuyerVerified = false; // 採購人員密碼驗證狀態 (預設 1234)
     let isGlobalLocked = false;
@@ -500,7 +502,7 @@
         timestamp: Date.now(),
         timeStr: new Date().toLocaleString('zh-TW'),
         operator: selectedAuditor || '未知人員',
-        role: currentRole || 'qc',
+        role: currentRole || 'warehouse',
         itemId: item && item.id ? item.id : 'SYSTEM',
         sku: item && item.sku ? item.sku : '系統操作',
         itemName: item && item.name ? item.name : '系統設定 / 批次作業',
@@ -610,17 +612,14 @@
         let day = '';
 
         if (parts[0].length === 4) {
-          // YYYY-M-D 或 YYYY/MM/DD
           year = parts[0];
           month = parts[1];
           day = parts[2];
         } else if (parts[0].length === 3 && Number(parts[0]) >= 50 && Number(parts[0]) <= 250) {
-          // 民國年 YYY/MM/DD (例如 116/08/08)
           year = String(Number(parts[0]) + 1911);
           month = parts[1];
           day = parts[2];
         } else if (parts[2].length === 4) {
-          // 美式/歐式 MM/DD/YYYY 或 DD/MM/YYYY
           year = parts[2];
           if (Number(parts[0]) > 12) {
             day = parts[0];
@@ -630,12 +629,10 @@
             day = parts[1];
           }
         } else if (parts[2].length === 2 && Number(parts[0]) <= 12) {
-          // Excel 美式短日期 M/D/YY (例如 8/8/27 -> 2027-08-08)
           year = '20' + parts[2];
           month = parts[0];
           day = parts[1];
         } else if (parts[0].length === 2 && Number(parts[0]) > 12) {
-          // 兩位數年份在前 YY/MM/DD (例如 27/08/08 -> 2027-08-08)
           year = '20' + parts[0];
           month = parts[1];
           day = parts[2];
@@ -679,12 +676,19 @@
 
       return `
         <div class="relative group inline-block">
-          <span class="text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold cursor-pointer"><i class="fa-solid ${iconClass} mr-1"></i>${cat}</span>
+          <span class="text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid ${iconClass} mr-1"></i>${cat}</span>
           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
             物料類別 (${cat})
           </div>
         </div>
       `;
+    }
+
+    // 取得名單中第一位倉管人員 (作為新裝置首次開啟的預設人員)
+    function getDefaultWarehousePerson() {
+      return personnelList.find(p => p.role === 'warehouse') ||
+             personnelList.find(p => p.role !== 'admin' && p.role !== 'buyer') ||
+             personnelList[0];
     }
 
     window.addEventListener('DOMContentLoaded', () => {
@@ -759,37 +763,52 @@
       db.ref('personnel_list').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data && Array.isArray(data)) {
-          personnelList = data.map(item => typeof item === 'string' ? { name: item, role: 'qc' } : item);
+          personnelList = data.map(item => typeof item === 'string' ? { name: item, role: 'warehouse' } : item);
           syncRoleWithOperator(true);
           renderAuditorOptions();
           renderItemList();
+          if (!document.getElementById('personnelModal').classList.contains('hidden')) {
+            renderPersonnelList();
+          }
         }
       });
     }
 
-    // 載入本機記憶的操作人員
+    // 載入本機記憶的操作人員；若該裝置首次開啟（無記憶紀錄），預設為第一位倉管人員
     function loadLocalAuditor() {
       const storedA = localStorage.getItem('qc_selected_auditor');
-      if (storedA) selectedAuditor = storedA;
+      if (storedA) {
+        selectedAuditor = storedA;
+      } else {
+        const defaultPerson = getDefaultWarehousePerson();
+        if (defaultPerson) {
+          selectedAuditor = defaultPerson.name;
+          currentRole = defaultPerson.role;
+        }
+      }
     }
 
-    // 初始載入或名單更新時，確保需密碼驗證之角色（管理員/採購）不會未經驗證直接登入
+    // 同步當前操作人員與角色權限（首次開啟預設倉管，已使用過的裝置記住上次選擇的人員）
     function syncRoleWithOperator(isInitial = false) {
-      let person = personnelList.find(p => p.name === selectedAuditor);
-      if (!person && personnelList.length > 0) {
-        person = personnelList.find(p => p.role !== 'admin' && p.role !== 'buyer') || personnelList[0];
-        selectedAuditor = person.name;
-      }
+      const storedA = localStorage.getItem('qc_selected_auditor');
+      let person = storedA ? personnelList.find(p => p.name === storedA) : null;
 
-      if (person) {
+      if (!person) {
+        person = getDefaultWarehousePerson();
+        if (person) {
+          selectedAuditor = person.name;
+          currentRole = person.role;
+        }
+      } else {
+        selectedAuditor = person.name;
         const needsPin = (person.role === 'admin' && !isAdminVerified) || (person.role === 'buyer' && !isBuyerVerified);
         if (needsPin) {
-          const openPerson = personnelList.find(p => p.role !== 'admin' && p.role !== 'buyer');
-          if (isInitial && openPerson) {
-            selectedAuditor = openPerson.name;
-            currentRole = openPerson.role;
+          const fallbackPerson = getDefaultWarehousePerson();
+          if (isInitial && fallbackPerson) {
+            selectedAuditor = fallbackPerson.name;
+            currentRole = fallbackPerson.role;
           } else {
-            currentRole = 'qc';
+            currentRole = 'warehouse';
           }
         } else if (person.role !== 'admin' && person.role !== 'buyer') {
           isAdminVerified = false;
@@ -887,16 +906,22 @@
         options.push({ value: 'pending_warehouse', label: '待初盤' });
         options.push({ value: 'completed_warehouse', label: '已初盤' });
       } else if (currentRole === 'buyer') {
+        options.push({ value: 'unlocked_buyer', label: '待鎖定' });
         options.push({ value: 'locked_buyer', label: '已盤點(已鎖定)' });
         options.push({ value: 'discrepancy', label: '有盤差' });
       } else if (currentRole === 'qc') {
+        options.push({ value: 'pending_qc', label: '待檢查' });
         options.push({ value: 'completed_qc', label: '已檢查' });
+        options.push({ value: 'normal_qc', label: '正常' });
         options.push({ value: 'abnormal', label: '品質異常' });
       } else if (currentRole === 'admin') {
         options.push({ value: 'pending_warehouse', label: '待初盤' });
         options.push({ value: 'completed_warehouse', label: '已初盤' });
+        options.push({ value: 'pending_qc', label: '待檢查' });
         options.push({ value: 'completed_qc', label: '已檢查' });
+        options.push({ value: 'normal_qc', label: '正常' });
         options.push({ value: 'abnormal', label: '品質異常' });
+        options.push({ value: 'unlocked_buyer', label: '待鎖定' });
         options.push({ value: 'locked_buyer', label: '已盤點(已鎖定)' });
         options.push({ value: 'discrepancy', label: '有盤差' });
       }
@@ -986,7 +1011,7 @@
       const roleMap = { qc: '品管', warehouse: '倉管', buyer: '採購', admin: '管理員' };
       select.innerHTML = personnelList.map(p => {
         const name = typeof p === 'object' ? p.name : p;
-        const role = typeof p === 'object' ? p.role : 'qc';
+        const role = typeof p === 'object' ? p.role : 'warehouse';
         return `<option value="${name}" ${name === selectedAuditor ? 'selected' : ''}>${name} (${roleMap[role] || '人員'})</option>`;
       }).join('');
     }
@@ -1011,16 +1036,40 @@
       };
 
       listEl.innerHTML = personnelList.map((p, idx) => `
-        <div class="flex justify-between items-center py-1.5 px-2">
-          <div class="flex items-center gap-2">
-            <span class="text-xs text-slate-800 font-bold">${p.name}</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold ${roleColors[p.role] || 'bg-slate-100'}">
+        <div class="flex justify-between items-center py-1.5 px-2 bg-white/70 rounded my-0.5">
+          <div class="flex items-center gap-2 min-w-0">
+            <span class="text-[11px] font-mono text-slate-400 w-4 text-right shrink-0">${idx + 1}.</span>
+            <span class="text-xs text-slate-800 font-bold truncate">${p.name}</span>
+            <span class="text-[10px] px-2 py-0.5 rounded-full font-bold shrink-0 ${roleColors[p.role] || 'bg-slate-100'}">
               ${roleNames[p.role] || '一般'}
             </span>
           </div>
-          <button onclick="removePersonnel(${idx})" class="text-rose-500 hover:text-rose-700 text-xs px-1"><i class="fa-solid fa-trash-can"></i></button>
+          <div class="flex items-center gap-1 shrink-0">
+            <button onclick="movePersonnel(${idx}, -1)" ${idx === 0 ? 'disabled' : ''} class="text-slate-500 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none px-1.5 py-0.5 rounded hover:bg-slate-200/70 text-xs transition" title="上移">
+              <i class="fa-solid fa-arrow-up"></i>
+            </button>
+            <button onclick="movePersonnel(${idx}, 1)" ${idx === personnelList.length - 1 ? 'disabled' : ''} class="text-slate-500 hover:text-indigo-600 disabled:opacity-25 disabled:pointer-events-none px-1.5 py-0.5 rounded hover:bg-slate-200/70 text-xs transition" title="下移">
+              <i class="fa-solid fa-arrow-down"></i>
+            </button>
+            <button onclick="removePersonnel(${idx})" class="text-rose-500 hover:text-rose-700 text-xs px-1.5 py-0.5 rounded hover:bg-rose-50 transition ml-1" title="刪除">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
         </div>
       `).join('');
+    }
+    function movePersonnel(idx, direction) {
+      if (currentRole !== 'admin') return;
+      const targetIdx = idx + direction;
+      if (targetIdx < 0 || targetIdx >= personnelList.length) return;
+      const movedPerson = personnelList[idx];
+      const temp = personnelList[idx];
+      personnelList[idx] = personnelList[targetIdx];
+      personnelList[targetIdx] = temp;
+      db.ref('personnel_list').set(personnelList);
+      recordAuditLog(null, '調整人員順序', `將「${movedPerson.name}」${direction < 0 ? '上移' : '下移'}至第 ${targetIdx + 1} 位`);
+      renderPersonnelList();
+      renderAuditorOptions();
     }
     function addPersonnel() {
       const input = document.getElementById('newPersonInput');
@@ -1294,6 +1343,18 @@
       }
     }
 
+    // 點擊儀表板統計卡片快速切換狀態篩選（再次點擊同一卡片或點擊總品項則恢復全部）
+    function filterByDashboardStatus(targetStatus) {
+      const select = document.getElementById('statusFilter');
+      if (!select) return;
+      if (targetStatus === 'all' || select.value === targetStatus) {
+        select.value = 'all';
+      } else {
+        select.value = targetStatus;
+      }
+      handleFilterChange();
+    }
+
     // 分頁與篩選控制函式
     function handleFilterChange() {
       currentPage = 1;
@@ -1380,8 +1441,11 @@
         
         if (filter === 'pending_warehouse') matchesStatus = !item.warehouseCompleted;
         else if (filter === 'completed_warehouse') matchesStatus = !!item.warehouseCompleted;
+        else if (filter === 'pending_qc') matchesStatus = !item.audited;
         else if (filter === 'completed_qc') matchesStatus = !!item.audited;
+        else if (filter === 'normal_qc') matchesStatus = !!item.audited && item.condition === 'normal';
         else if (filter === 'abnormal') matchesStatus = !!item.audited && item.condition === 'abnormal';
+        else if (filter === 'unlocked_buyer') matchesStatus = !item.lockedByBuyer;
         else if (filter === 'locked_buyer') matchesStatus = !!item.lockedByBuyer;
         else if (filter === 'discrepancy') matchesStatus = hasDiscrepancy;
         
@@ -1455,9 +1519,7 @@
         const cardBgClass = isAbnormal ? 'bg-rose-50/40' : companyTheme.cardBg;
 
         // 權限控管：
-        // 1. 倉管與管理員在未鎖定時可修改儲位與倉管初盤數量
         const canEditWarehouse = (currentRole === 'warehouse' || currentRole === 'admin') && !isGlobalLocked && !item.lockedByBuyer;
-        // 2. 採購與管理員在未鎖定時可修改採購覆核區塊（批號、有效日期、正式實盤數量、覆核說明）
         const canEditBuyer = (currentRole === 'buyer' || currentRole === 'admin') && !isGlobalLocked && !item.lockedByBuyer;
         const isQcLocked = isGlobalLocked;
         const isBuyerLockToggleDisabled = isGlobalLocked;
@@ -1465,17 +1527,19 @@
         return `
           <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
             
-            <!-- 卡片頂部標頭 (包含 Tailwind 漂浮小黑框提示) -->
+            <!-- 卡片頂部標頭 (標籤列獨立阻斷點擊展開，點擊品名或右側箭頭才會展開卡片) -->
             <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 flex-1 cursor-pointer" onclick="toggleCardExpand('${item.id}')">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onclick="event.stopPropagation()" onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
                 <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-1.5 flex-wrap">
+                  
+                  <!-- 標籤資訊列 (點擊此區不會誤觸展開卡片) -->
+                  <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap cursor-default select-none">
                     
                     <!-- 1. 公司標籤 (與卡片左側色條同色系) -->
                     ${item.company ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold cursor-pointer"><i class="fa-solid fa-building mr-1"></i>${item.company}</span>
+                        <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-building mr-1"></i>${item.company}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           所屬公司
                         </div>
@@ -1484,7 +1548,7 @@
 
                     <!-- 2. SKU 標籤 -->
                     <div class="relative group inline-block">
-                      <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded cursor-pointer">${item.sku}</span>
+                      <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded">${item.sku}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                         SKU 料號
                       </div>
@@ -1496,20 +1560,20 @@
                     <!-- 4. 儲存地點標籤 -->
                     ${hasLooseInfo ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${item.location || '未指定'}</span>
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${item.location || '未指定'}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
                       </div>
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${item.looseLocation || '未指定'}</span>
+                        <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${item.looseLocation || '未指定'}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           散貨儲存地點
                         </div>
                       </div>
                     ` : `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold cursor-pointer"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${item.location || '未指定地點'}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
@@ -1519,7 +1583,7 @@
                     <!-- 5. 批號標籤 -->
                     ${item.batchNo ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
+                        <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${item.batchNo}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           產品批號
                         </div>
@@ -1529,7 +1593,7 @@
                     <!-- 6. 有效日期標籤 -->
                     ${normalizedExp ? `
                       <div class="relative group inline-block">
-                        <span class="text-xs ${isExpired ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-50 text-sky-800 border-sky-200'} border px-1.5 py-0.5 rounded font-mono font-semibold cursor-pointer"><i class="fa-regular fa-calendar-check mr-1"></i>${normalizedExp}</span>
+                        <span class="text-xs ${isExpired ? 'bg-rose-100 text-rose-800 border-rose-300' : 'bg-sky-50 text-sky-800 border-sky-200'} border px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-regular fa-calendar-check mr-1"></i>${normalizedExp}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           有效日期${isExpired ? ' (已過期)' : ''}
                         </div>
@@ -1539,7 +1603,11 @@
                     ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
                     ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
                   </div>
-                  <h2 class="font-bold text-sm text-slate-800 mt-1 truncate">${item.name}</h2>
+
+                  <!-- 品名標題列：點擊可展開 / 收合卡片 -->
+                  <div onclick="toggleCardExpand('${item.id}')" class="cursor-pointer pt-1 group/title">
+                    <h2 class="font-bold text-sm text-slate-800 truncate group-hover/title:text-indigo-700 transition">${item.name}</h2>
+                  </div>
                 </div>
               </div>
 
@@ -2128,12 +2196,13 @@
       }
     }
 
-    // 依不同部門權限動態渲染專屬統計卡片與獨立進度條
+    // 依不同部門權限動態渲染專屬統計卡片（支援點擊快速篩選）與獨立進度條
     function updateDashboard() {
       const dashEl = document.getElementById('dashboardContainer');
       const progEl = document.getElementById('progressContainer');
       if (!dashEl || !progEl) return;
 
+      const currentStatusFilter = document.getElementById('statusFilter')?.value || 'all';
       const total = inventoryData.length;
       const warehouseDone = inventoryData.filter(i => !!i.warehouseCompleted).length;
       const warehousePending = total - warehouseDone;
@@ -2161,18 +2230,18 @@
 
         dashHtml = `
           <div class="grid grid-cols-3 gap-2 text-center">
-            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+            <button type="button" onclick="filterByDashboardStatus('all')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'all' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm cursor-pointer transition">
               <div class="text-xs text-slate-500">總品項</div>
               <div class="text-lg font-black text-slate-800">${total}</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/30">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('pending_warehouse')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'pending_warehouse' ? 'border-amber-500 ring-2 ring-amber-300' : 'border-amber-200 hover:border-amber-400'} shadow-sm bg-amber-50/30 cursor-pointer transition">
               <div class="text-xs text-amber-700 font-semibold">待初盤</div>
               <div class="text-lg font-black text-amber-600">${warehousePending}</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border border-teal-200 shadow-sm bg-teal-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('completed_warehouse')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'completed_warehouse' ? 'border-teal-500 ring-2 ring-teal-300' : 'border-teal-200 hover:border-teal-400'} shadow-sm bg-teal-50/40 cursor-pointer transition">
               <div class="text-xs text-teal-700 font-semibold">已初盤</div>
               <div class="text-lg font-black text-teal-600">${warehouseDone}</div>
-            </div>
+            </button>
           </div>
         `;
       } else if (currentRole === 'qc') {
@@ -2184,26 +2253,26 @@
 
         dashHtml = `
           <div class="grid grid-cols-5 gap-1.5 sm:gap-2 text-center">
-            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm">
+            <button type="button" onclick="filterByDashboardStatus('all')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'all' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm cursor-pointer transition">
               <div class="text-[11px] sm:text-xs text-slate-500">總品項</div>
               <div class="text-base sm:text-lg font-black text-slate-800">${total}</div>
-            </div>
-            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm bg-slate-50/60">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('pending_qc')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'pending_qc' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm bg-slate-50/60 cursor-pointer transition">
               <div class="text-[11px] sm:text-xs text-slate-600 font-semibold">待檢查</div>
               <div class="text-base sm:text-lg font-black text-slate-600">${qcPending}</div>
-            </div>
-            <div class="bg-white p-2 rounded-xl border border-indigo-200 shadow-sm bg-indigo-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('completed_qc')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'completed_qc' ? 'border-indigo-500 ring-2 ring-indigo-300' : 'border-indigo-200 hover:border-indigo-400'} shadow-sm bg-indigo-50/40 cursor-pointer transition">
               <div class="text-[11px] sm:text-xs text-indigo-700 font-semibold">已檢查</div>
               <div class="text-base sm:text-lg font-black text-indigo-600">${qcDone}</div>
-            </div>
-            <div class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('normal_qc')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'normal_qc' ? 'border-emerald-500 ring-2 ring-emerald-300' : 'border-emerald-200 hover:border-emerald-400'} shadow-sm bg-emerald-50/40 cursor-pointer transition">
               <div class="text-[11px] sm:text-xs text-emerald-700 font-semibold">正常</div>
               <div class="text-base sm:text-lg font-black text-emerald-600">${normal}</div>
-            </div>
-            <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm bg-rose-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('abnormal')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'abnormal' ? 'border-rose-500 ring-2 ring-rose-300' : 'border-rose-200 hover:border-rose-400'} shadow-sm bg-rose-50/40 cursor-pointer transition">
               <div class="text-[11px] sm:text-xs text-rose-700 font-semibold">異常</div>
               <div class="text-base sm:text-lg font-black text-rose-600">${abnormal}</div>
-            </div>
+            </button>
           </div>
         `;
       } else if (currentRole === 'buyer') {
@@ -2215,22 +2284,22 @@
 
         dashHtml = `
           <div class="grid grid-cols-4 gap-2 text-center">
-            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+            <button type="button" onclick="filterByDashboardStatus('all')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'all' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm cursor-pointer transition">
               <div class="text-xs text-slate-500">總品項</div>
               <div class="text-lg font-black text-slate-800">${total}</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm bg-slate-50/60">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('unlocked_buyer')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'unlocked_buyer' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm bg-slate-50/60 cursor-pointer transition">
               <div class="text-xs text-slate-600 font-semibold">待鎖定</div>
               <div class="text-lg font-black text-slate-600">${buyerPending}</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('locked_buyer')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'locked_buyer' ? 'border-amber-500 ring-2 ring-amber-300' : 'border-amber-200 hover:border-amber-400'} shadow-sm bg-amber-50/40 cursor-pointer transition">
               <div class="text-xs text-amber-800 font-semibold">已盤點(鎖定)</div>
               <div class="text-lg font-black text-amber-600">${buyerLocked}</div>
-            </div>
-            <div class="bg-white p-2.5 rounded-xl border border-orange-200 shadow-sm bg-orange-50/40">
+            </button>
+            <button type="button" onclick="filterByDashboardStatus('discrepancy')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'discrepancy' ? 'border-orange-500 ring-2 ring-orange-300' : 'border-orange-200 hover:border-orange-400'} shadow-sm bg-orange-50/40 cursor-pointer transition">
               <div class="text-xs text-orange-700 font-semibold">有盤差</div>
               <div class="text-lg font-black text-orange-600">${discrepancy}</div>
-            </div>
+            </button>
           </div>
         `;
       } else {
@@ -2244,36 +2313,36 @@
         dashHtml = `
           <div class="space-y-2">
             <div class="grid grid-cols-4 gap-2 text-center">
-              <div class="bg-white p-2.5 rounded-xl border border-slate-200 shadow-sm">
+              <button type="button" onclick="filterByDashboardStatus('all')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'all' ? 'border-slate-500 ring-2 ring-slate-300' : 'border-slate-200 hover:border-slate-400'} shadow-sm cursor-pointer transition">
                 <div class="text-xs text-slate-500">總品項</div>
                 <div class="text-lg font-black text-slate-800">${total}</div>
-              </div>
-              <div class="bg-white p-2.5 rounded-xl border border-teal-200 shadow-sm bg-teal-50/30">
+              </button>
+              <button type="button" onclick="filterByDashboardStatus('completed_warehouse')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'completed_warehouse' ? 'border-teal-500 ring-2 ring-teal-300' : 'border-teal-200 hover:border-teal-400'} shadow-sm bg-teal-50/30 cursor-pointer transition">
                 <div class="text-xs text-teal-700 font-semibold">已初盤</div>
                 <div class="text-lg font-black text-teal-600">${warehouseDone}</div>
-              </div>
-              <div class="bg-white p-2.5 rounded-xl border border-indigo-200 shadow-sm bg-indigo-50/30">
+              </button>
+              <button type="button" onclick="filterByDashboardStatus('completed_qc')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'completed_qc' ? 'border-indigo-500 ring-2 ring-indigo-300' : 'border-indigo-200 hover:border-indigo-400'} shadow-sm bg-indigo-50/30 cursor-pointer transition">
                 <div class="text-xs text-indigo-700 font-semibold">已檢查</div>
                 <div class="text-lg font-black text-indigo-600">${qcDone}</div>
-              </div>
-              <div class="bg-white p-2.5 rounded-xl border border-amber-200 shadow-sm bg-amber-50/40">
+              </button>
+              <button type="button" onclick="filterByDashboardStatus('locked_buyer')" class="bg-white p-2.5 rounded-xl border ${currentStatusFilter === 'locked_buyer' ? 'border-amber-500 ring-2 ring-amber-300' : 'border-amber-200 hover:border-amber-400'} shadow-sm bg-amber-50/40 cursor-pointer transition">
                 <div class="text-xs text-amber-800 font-semibold">已盤點</div>
                 <div class="text-lg font-black text-amber-600">${buyerLocked}</div>
-              </div>
+              </button>
             </div>
             <div class="grid grid-cols-3 gap-2 text-center">
-              <div class="bg-white p-2 rounded-xl border border-emerald-200 shadow-sm bg-emerald-50/30">
+              <button type="button" onclick="filterByDashboardStatus('normal_qc')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'normal_qc' ? 'border-emerald-500 ring-2 ring-emerald-300' : 'border-emerald-200 hover:border-emerald-400'} shadow-sm bg-emerald-50/30 cursor-pointer transition">
                 <div class="text-xs text-emerald-600 font-semibold">正常</div>
                 <div class="text-base font-black text-emerald-600">${normal}</div>
-              </div>
-              <div class="bg-white p-2 rounded-xl border border-rose-200 shadow-sm bg-rose-50/30">
+              </button>
+              <button type="button" onclick="filterByDashboardStatus('abnormal')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'abnormal' ? 'border-rose-500 ring-2 ring-rose-300' : 'border-rose-200 hover:border-rose-400'} shadow-sm bg-rose-50/30 cursor-pointer transition">
                 <div class="text-xs text-rose-600 font-semibold">異常 (品管)</div>
                 <div class="text-base font-black text-rose-600">${abnormal}</div>
-              </div>
-              <div class="bg-white p-2 rounded-xl border border-orange-200 shadow-sm bg-orange-50/30">
+              </button>
+              <button type="button" onclick="filterByDashboardStatus('discrepancy')" class="bg-white p-2 rounded-xl border ${currentStatusFilter === 'discrepancy' ? 'border-orange-500 ring-2 ring-orange-300' : 'border-orange-200 hover:border-orange-400'} shadow-sm bg-orange-50/30 cursor-pointer transition">
                 <div class="text-xs text-orange-700 font-semibold">盤差 (採購)</div>
                 <div class="text-base font-black text-orange-600">${discrepancy}</div>
-              </div>
+              </button>
             </div>
           </div>
         `;
