@@ -20,146 +20,153 @@
     body { -webkit-tap-highlight-color: transparent; }
   </style>
 </head>
-<body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen pb-20 transition-colors duration-300">
+<body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between transition-colors duration-300">
 
-  <!-- 頂部導覽列 (隨角色切換背景色) -->
-  <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
-    <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
-      <div class="flex items-center space-x-2 shrink-0">
-        <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
-        <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
-      </div>
-      
-      <div class="flex items-center space-x-2 flex-wrap justify-end">
-        <!-- 角色視圖選單 (依操作人員權限自動鎖定或開放) -->
-        <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none">
-          <option value="qc" class="text-slate-800 bg-white">權限：品管人員 (QC)</option>
-          <option value="warehouse" class="text-slate-800 bg-white">權限：倉管人員 (Warehouse)</option>
-          <option value="buyer" class="text-slate-800 bg-white">權限：採購人員 (Purchasing)</option>
-          <option value="admin" class="text-slate-800 bg-white">權限：管理員 (Admin)</option>
-        </select>
-
-        <!-- 管理員專屬功能按鈕 -->
-        <div id="adminControls" class="flex items-center gap-1.5 hidden">
-          <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
-            <i class="fa-solid fa-file-import"></i> 匯入
-          </button>
-          <button onclick="openAuditLogModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="查看全站操作日誌">
-            <i class="fa-solid fa-clock-rotate-left"></i> 紀錄
-          </button>
-          <button onclick="openPersonnelModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="人員管理">
-            <i class="fa-solid fa-user-gear"></i> 人員
-          </button>
-          <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-            <i class="fa-solid fa-lock"></i> 全域鎖定
-          </button>
-          <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料(保留操作紀錄)">
-            <i class="fa-solid fa-trash-can"></i>
-          </button>
+  <div>
+    <!-- 頂部導覽列 (隨角色切換背景色) -->
+    <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
+      <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+        <div class="flex items-center space-x-2 shrink-0">
+          <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
+          <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
         </div>
+        
+        <div class="flex items-center space-x-2 flex-wrap justify-end">
+          <!-- 角色視圖選單 (依操作人員權限自動鎖定或開放) -->
+          <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none">
+            <option value="qc" class="text-slate-800 bg-white">權限：品管人員 (QC)</option>
+            <option value="warehouse" class="text-slate-800 bg-white">權限：倉管人員 (Warehouse)</option>
+            <option value="buyer" class="text-slate-800 bg-white">權限：採購人員 (Purchasing)</option>
+            <option value="admin" class="text-slate-800 bg-white">權限：管理員 (Admin)</option>
+          </select>
 
-        <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-          <i class="fa-solid fa-file-export"></i> 匯出
-        </button>
-      </div>
-    </div>
-  </header>
+          <!-- 管理員專屬功能按鈕 -->
+          <div id="adminControls" class="flex items-center gap-1.5 hidden">
+            <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
+              <i class="fa-solid fa-file-import"></i> 匯入
+            </button>
+            <button onclick="openAuditLogModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="查看全站操作日誌">
+              <i class="fa-solid fa-clock-rotate-left"></i> 紀錄
+            </button>
+            <button onclick="openPersonnelModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="人員管理">
+              <i class="fa-solid fa-user-gear"></i> 人員
+            </button>
+            <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+              <i class="fa-solid fa-lock"></i> 全域鎖定
+            </button>
+            <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料(保留操作紀錄)">
+              <i class="fa-solid fa-trash-can"></i>
+            </button>
+          </div>
 
-  <main class="max-w-4xl mx-auto px-3 pt-3">
-    <!-- 全域鎖定提示條 -->
-    <div id="globalLockNotice" class="hidden bg-amber-500 text-white font-bold text-xs p-2.5 rounded-xl shadow-sm mb-3 flex items-center justify-between">
-      <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
-    </div>
-
-    <!-- 盤點人員選擇列 (選擇後自動連動對應權限頁面與密碼驗證) -->
-    <div class="bg-white rounded-xl shadow-sm p-3 mb-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
-      <div class="flex items-center gap-2 w-full sm:w-auto">
-        <label class="text-xs font-bold text-slate-600 shrink-0"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i>當前操作人員：</label>
-        <select id="auditorSelect" onchange="handleAuditorChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2 font-medium">
-        </select>
-      </div>
-      <div class="text-xs text-slate-500 flex items-center gap-2">
-        <span id="roleBadge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">倉管人員模式</span>
-        <span id="syncStatus" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
-        <span id="savedTimeNotice" class="font-semibold text-slate-700">連線中</span>
-      </div>
-    </div>
-
-    <!-- 動態儀表板 Dashboard (依不同部門權限顯示專屬統計數據，點擊可直接篩選) -->
-    <div id="dashboardContainer" class="mb-3"></div>
-
-    <!-- 動態進度條 (依不同部門權限分開計算進度) -->
-    <div id="progressContainer" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3"></div>
-
-    <!-- 搜尋與篩選工具列 -->
-    <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3 space-y-2">
-      <div class="flex flex-wrap gap-2">
-        <div class="relative flex-1 min-w-[160px]">
-          <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
-          <input type="text" id="searchInput" oninput="handleFilterChange()" placeholder="搜尋 SKU、品名、類別、批號、地點或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
-        </div>
-        <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
-          <option value="all">全部公司</option>
-        </select>
-        <select id="categoryFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
-          <option value="all">全部類別</option>
-        </select>
-        <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
-          <option value="all">全部狀態</option>
-        </select>
-        <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
-          <option value="5" selected>每頁 5 筆</option>
-          <option value="20">每頁 20 筆</option>
-          <option value="50">每頁 50 筆</option>
-          <option value="100">每頁 100 筆</option>
-          <option value="all">全部顯示</option>
-        </select>
-      </div>
-
-      <!-- 公司色標對照列 (有公司資料時自動顯示) -->
-      <div id="companyColorLegend" class="hidden flex flex-wrap items-center gap-2 pt-1.5 border-t border-slate-100 text-[11px]"></div>
-
-      <div class="flex justify-between items-center pt-1.5 border-t border-slate-100 text-xs">
-        <div class="flex items-center gap-2">
-          <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
-          <label for="selectAllCheckbox" class="text-slate-600">全選本頁品項</label>
-        </div>
-        <div class="flex items-center gap-3">
-          <button onclick="toggleExpandAll()" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
-            <i id="expandAllIcon" class="fa-solid fa-angles-down"></i>
-            <span id="expandAllBtnText">展開本頁</span>
-          </button>
-          <button id="batchDeleteBtn" onclick="deleteSelectedItems()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs transition">
-            <i class="fa-solid fa-trash-can mr-1"></i>刪除選取 (<span id="selectedCount">0</span>)
+          <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+            <i class="fa-solid fa-file-export"></i> 匯出
           </button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <!-- 品項列表卡片區 -->
-    <div id="itemList" class="space-y-2"></div>
-
-    <!-- 分頁導覽控制列 -->
-    <div id="paginationControls" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
-      <div id="paginationInfo" class="text-slate-600 font-medium">顯示第 1 - 5 筆，共 0 筆</div>
-      <div class="flex items-center gap-1.5">
-        <button id="prevPageBtn" onclick="changePage(currentPage - 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
-          <i class="fa-solid fa-chevron-left mr-1"></i>上一頁
-        </button>
-        <span id="pageIndicator" class="px-2.5 py-1.5 font-bold text-indigo-700 bg-indigo-50 rounded-lg">第 1 / 1 頁</span>
-        <button id="nextPageBtn" onclick="changePage(currentPage + 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
-          下一頁<i class="fa-solid fa-chevron-right ml-1"></i>
-        </button>
+    <main class="max-w-4xl mx-auto px-3 pt-3">
+      <!-- 全域鎖定提示條 -->
+      <div id="globalLockNotice" class="hidden bg-amber-500 text-white font-bold text-xs p-2.5 rounded-xl shadow-sm mb-3 flex items-center justify-between">
+        <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
       </div>
-    </div>
 
-    <!-- 空白狀態提示 -->
-    <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
-      <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 mb-3"></i>
-      <h3 class="text-base font-bold text-slate-700">目前無符合條件的庫存資料</h3>
-      <p class="text-xs text-slate-500 mt-1 mb-4">請調整搜尋條件，或由管理員點擊上方「匯入」上傳庫存主檔</p>
-    </div>
-  </main>
+      <!-- 盤點人員選擇列 (選擇後自動連動對應權限頁面與密碼驗證) -->
+      <div class="bg-white rounded-xl shadow-sm p-3 mb-3 border border-slate-200 flex flex-wrap items-center justify-between gap-2">
+        <div class="flex items-center gap-2 w-full sm:w-auto">
+          <label class="text-xs font-bold text-slate-600 shrink-0"><i class="fa-solid fa-clipboard-user text-indigo-600 mr-1"></i>當前操作人員：</label>
+          <select id="auditorSelect" onchange="handleAuditorChange(this.value)" class="bg-slate-50 border border-slate-300 text-slate-800 text-sm rounded-lg focus:ring-indigo-500 focus:border-indigo-500 block w-full p-2 font-medium">
+          </select>
+        </div>
+        <div class="text-xs text-slate-500 flex items-center gap-2">
+          <span id="roleBadge" class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full font-bold">倉管人員模式</span>
+          <span id="syncStatus" class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+          <span id="savedTimeNotice" class="font-semibold text-slate-700">連線中</span>
+        </div>
+      </div>
+
+      <!-- 動態儀表板 Dashboard (依不同部門權限顯示專屬統計數據，點擊可直接篩選) -->
+      <div id="dashboardContainer" class="mb-3"></div>
+
+      <!-- 動態圓環進度圖 (依不同部門權限分開計算進度與主題色) -->
+      <div id="progressContainer" class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3"></div>
+
+      <!-- 搜尋與篩選工具列 -->
+      <div class="bg-white p-3 rounded-xl shadow-sm border border-slate-200 mb-3 space-y-2">
+        <div class="flex flex-wrap gap-2">
+          <div class="relative flex-1 min-w-[160px]">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-400 text-xs"></i>
+            <input type="text" id="searchInput" oninput="handleFilterChange()" placeholder="搜尋產品編號、品名、類別、批號、地點或公司..." class="w-full pl-8 pr-3 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          </div>
+          <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+            <option value="all">全部公司</option>
+          </select>
+          <select id="categoryFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+            <option value="all">全部類別</option>
+          </select>
+          <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+            <option value="all">全部狀態</option>
+          </select>
+          <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
+            <option value="5" selected>每頁 5 筆</option>
+            <option value="20">每頁 20 筆</option>
+            <option value="50">每頁 50 筆</option>
+            <option value="100">每頁 100 筆</option>
+            <option value="all">全部顯示</option>
+          </select>
+        </div>
+
+        <!-- 公司色標對照列 (有公司資料時自動顯示) -->
+        <div id="companyColorLegend" class="hidden flex flex-wrap items-center gap-2 pt-1.5 border-t border-slate-100 text-[11px]"></div>
+
+        <div class="flex justify-between items-center pt-1.5 border-t border-slate-100 text-xs">
+          <div class="flex items-center gap-2">
+            <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)" class="w-4 h-4 text-indigo-600 rounded">
+            <label for="selectAllCheckbox" class="text-slate-600">全選本頁品項</label>
+          </div>
+          <div class="flex items-center gap-3">
+            <button onclick="toggleExpandAll()" class="text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
+              <i id="expandAllIcon" class="fa-solid fa-angles-down"></i>
+              <span id="expandAllBtnText">展開本頁</span>
+            </button>
+            <button id="batchDeleteBtn" onclick="deleteSelectedItems()" class="hidden bg-rose-600 hover:bg-rose-700 text-white px-2.5 py-1 rounded text-xs transition">
+              <i class="fa-solid fa-trash-can mr-1"></i>刪除選取 (<span id="selectedCount">0</span>)
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 品項列表卡片區 -->
+      <div id="itemList" class="space-y-2"></div>
+
+      <!-- 分頁導覽控制列 -->
+      <div id="paginationControls" class="hidden bg-white p-3 rounded-xl shadow-sm border border-slate-200 mt-3 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div id="paginationInfo" class="text-slate-600 font-medium">顯示第 1 - 5 筆，共 0 筆</div>
+        <div class="flex items-center gap-1.5">
+          <button id="prevPageBtn" onclick="changePage(currentPage - 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
+            <i class="fa-solid fa-chevron-left mr-1"></i>上一頁
+          </button>
+          <span id="pageIndicator" class="px-2.5 py-1.5 font-bold text-indigo-700 bg-indigo-50 rounded-lg">第 1 / 1 頁</span>
+          <button id="nextPageBtn" onclick="changePage(currentPage + 1)" class="px-3 py-1.5 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 text-slate-700 font-semibold disabled:opacity-40 disabled:pointer-events-none transition">
+            下一頁<i class="fa-solid fa-chevron-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 空白狀態提示 -->
+      <div id="emptyState" class="hidden text-center py-12 bg-white rounded-xl border border-dashed border-slate-300 p-6">
+        <i class="fa-solid fa-cloud-arrow-up text-4xl text-slate-300 mb-3"></i>
+        <h3 class="text-base font-bold text-slate-700">目前無符合條件的庫存資料</h3>
+        <p class="text-xs text-slate-500 mt-1 mb-4">請調整搜尋條件，或由管理員點擊上方「匯入」上傳庫存主檔</p>
+      </div>
+    </main>
+  </div>
+
+  <!-- 頁尾版權宣告 -->
+  <footer class="max-w-4xl w-full mx-auto px-4 py-6 mt-4 text-center text-xs text-slate-400">
+    Copyright © 2026–2026 WIC. All rights reserved.
+  </footer>
 
   <!-- 照片大圖檢視 Modal -->
   <div id="imageViewerModal" class="fixed inset-0 bg-black/80 z-50 hidden flex items-center justify-center p-4" onclick="closeImageViewer()">
@@ -239,7 +246,7 @@
         <div class="flex flex-wrap gap-2">
           <div class="relative flex-1 min-w-[180px]">
             <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
-            <input type="text" id="logSearchInput" oninput="renderAuditLogModalList()" placeholder="搜尋操作人員、SKU、品名或變更內容..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
+            <input type="text" id="logSearchInput" oninput="renderAuditLogModalList()" placeholder="搜尋操作人員、產品編號、品名或變更內容..." class="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
           </div>
           <select id="logRoleFilter" onchange="renderAuditLogModalList()" class="bg-white border border-slate-300 text-xs rounded-lg px-2.5 py-1.5 font-medium text-slate-700 focus:outline-none">
             <option value="all">全部部門角色</option>
@@ -297,18 +304,29 @@
   <div id="importModal" class="fixed inset-0 bg-black/50 z-40 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-lg w-full p-4 shadow-xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
-        <h3 class="font-bold text-slate-800 text-base"><i class="fa-file-excel text-emerald-600 mr-1.5"></i>匯入 Excel / CSV 庫存主檔</h3>
+        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-file-excel text-emerald-600 mr-1.5"></i>匯入 Excel / CSV 庫存主檔</h3>
         <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       
       <div class="space-y-3">
         <div class="bg-indigo-50 p-2.5 rounded-lg text-xs text-indigo-800 flex justify-between items-center gap-2">
-          <span>1. 下載標準範例檔 (SKU, 品名, 類別[原料/包材], 儲存地點, 帳面量, 單位, 批號, 有效日期, 公司)</span>
-          <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0">下載範例</button>
+          <span>1. 下載標準範例檔 (產品編號, 產品品名, 產品批號, 有效日期, 數量, 單位, 倉庫, 所屬公司, 類別)</span>
+          <button onclick="downloadSampleCSV()" class="bg-indigo-600 text-white px-2.5 py-1 rounded text-[11px] hover:bg-indigo-700 shrink-0 font-semibold">下載範例</button>
         </div>
 
         <div>
-          <label class="block text-xs font-bold text-slate-700 mb-1">2. 選擇檔案與編碼設定 (CSV 專用)：</label>
+          <label class="block text-xs font-bold text-slate-700 mb-1">2. 指定本次匯入的公司：</label>
+          <div class="flex gap-2">
+            <select id="importCompanyOverrideSelect" onchange="handleImportCompanyOverrideChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg p-1.5 flex-1 font-semibold text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+              <option value="__file__">依檔案內容 (若檔案無公司欄則留空)</option>
+              <option value="__custom__">＋ 手動輸入新公司名稱...</option>
+            </select>
+            <input type="text" id="importCustomCompanyInput" oninput="reapplyImportCompanyOverride()" placeholder="輸入新公司名稱..." class="hidden border border-indigo-300 bg-indigo-50/40 rounded-lg px-2.5 py-1.5 text-xs font-semibold text-slate-800 flex-1 focus:ring-1 focus:ring-indigo-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">3. 選擇檔案與編碼設定 (CSV 專用)：</label>
           <div class="flex gap-2 mb-2">
             <select id="encodingSelect" onchange="parseSelectedFile()" class="bg-slate-50 border text-xs rounded-lg p-1.5 flex-1">
               <option value="auto">自動判定編碼 (推薦)</option>
@@ -331,12 +349,13 @@
             <table class="w-full text-left">
               <thead class="bg-slate-100 sticky top-0 text-slate-600">
                 <tr>
-                  <th class="p-1.5">SKU</th>
-                  <th class="p-1.5">品名</th>
-                  <th class="p-1.5">類別</th>
+                  <th class="p-1.5">產品編號</th>
+                  <th class="p-1.5">產品品名</th>
                   <th class="p-1.5">批號</th>
                   <th class="p-1.5">有效日期</th>
+                  <th class="p-1.5">倉庫</th>
                   <th class="p-1.5">公司</th>
+                  <th class="p-1.5">類別</th>
                 </tr>
               </thead>
               <tbody id="importPreviewTable"></tbody>
@@ -1245,7 +1264,7 @@
         alert('目前無可匯出的操作紀錄！');
         return;
       }
-      let csv = '\uFEFF操作時間,部門角色,操作人員,SKU編號,品名,變更項目,變更明細\n';
+      let csv = '\uFEFF操作時間,部門角色,操作人員,產品編號,品名,變更項目,變更明細\n';
       logsToExport.forEach(log => {
         csv += [
           `"${log.timeStr || ''}"`,
@@ -1546,11 +1565,11 @@
                       </div>
                     ` : ''}
 
-                    <!-- 2. SKU 標籤 -->
+                    <!-- 2. 產品編號標籤 -->
                     <div class="relative group inline-block">
                       <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded">${item.sku}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
-                        SKU 料號
+                        產品編號
                       </div>
                     </div>
 
@@ -2196,7 +2215,7 @@
       }
     }
 
-    // 依不同部門權限動態渲染專屬統計卡片（支援點擊快速篩選）與獨立進度條
+    // 依不同部門權限動態渲染專屬統計卡片（支援點擊快速篩選）與部門專屬配色圓環進度圖
     function updateDashboard() {
       const dashEl = document.getElementById('dashboardContainer');
       const progEl = document.getElementById('progressContainer');
@@ -2217,16 +2236,30 @@
       let dashHtml = '';
       let progTitle = '';
       let progSub = '';
+      let progRemainText = '';
+      let doneCount = 0;
       let percent = 0;
-      let barColor = 'bg-indigo-600';
-      let textColor = 'text-indigo-700';
+      let ringTheme = {
+        startColor: '#86efac',
+        endColor: '#15803d',
+        trackColor: '#dcfce7',
+        textColor: 'text-emerald-700',
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+      };
 
       if (currentRole === 'warehouse') {
+        doneCount = warehouseDone;
         percent = total > 0 ? Math.round((warehouseDone / total) * 100) : 0;
         progTitle = '倉管初盤進度';
-        progSub = `(已初盤 ${warehouseDone} / ${total} 筆)`;
-        barColor = 'bg-emerald-600';
-        textColor = 'text-emerald-700';
+        progSub = `已初盤 ${warehouseDone} / ${total} 筆`;
+        progRemainText = total === 0 ? '尚未匯入盤點品項' : (warehousePending === 0 ? '已全數完成初盤作業' : `尚有 ${warehousePending} 筆待初盤`);
+        ringTheme = {
+          startColor: '#86efac',
+          endColor: '#15803d',
+          trackColor: '#dcfce7',
+          textColor: 'text-emerald-700',
+          badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200'
+        };
 
         dashHtml = `
           <div class="grid grid-cols-3 gap-2 text-center">
@@ -2245,11 +2278,18 @@
           </div>
         `;
       } else if (currentRole === 'qc') {
+        doneCount = qcDone;
         percent = total > 0 ? Math.round((qcDone / total) * 100) : 0;
         progTitle = '品管檢查進度';
-        progSub = `(已檢查 ${qcDone} / ${total} 筆)`;
-        barColor = 'bg-indigo-600';
-        textColor = 'text-indigo-700';
+        progSub = `已檢查 ${qcDone} / ${total} 筆`;
+        progRemainText = total === 0 ? '尚未匯入盤點品項' : (qcPending === 0 ? '已全數完成品管檢查' : `尚有 ${qcPending} 筆待檢查（正常 ${normal} · 異常 ${abnormal}）`);
+        ringTheme = {
+          startColor: '#a5b4fc',
+          endColor: '#3730a3',
+          trackColor: '#e0e7ff',
+          textColor: 'text-indigo-700',
+          badgeBg: 'bg-indigo-50 text-indigo-700 border-indigo-200'
+        };
 
         dashHtml = `
           <div class="grid grid-cols-5 gap-1.5 sm:gap-2 text-center">
@@ -2276,11 +2316,18 @@
           </div>
         `;
       } else if (currentRole === 'buyer') {
+        doneCount = buyerLocked;
         percent = total > 0 ? Math.round((buyerLocked / total) * 100) : 0;
         progTitle = '採購覆核進度';
-        progSub = `(已鎖定確認 ${buyerLocked} / ${total} 筆)`;
-        barColor = 'bg-amber-500';
-        textColor = 'text-amber-700';
+        progSub = `已鎖定確認 ${buyerLocked} / ${total} 筆`;
+        progRemainText = total === 0 ? '尚未匯入盤點品項' : (buyerPending === 0 ? '已全數完成採購鎖定確認' : `尚有 ${buyerPending} 筆待鎖定（有盤差 ${discrepancy} 筆）`);
+        ringTheme = {
+          startColor: '#fcd34d',
+          endColor: '#b45309',
+          trackColor: '#fef3c7',
+          textColor: 'text-amber-700',
+          badgeBg: 'bg-amber-50 text-amber-800 border-amber-200'
+        };
 
         dashHtml = `
           <div class="grid grid-cols-4 gap-2 text-center">
@@ -2304,11 +2351,18 @@
         `;
       } else {
         // Admin 全權限總覽
+        doneCount = buyerLocked;
         percent = total > 0 ? Math.round((buyerLocked / total) * 100) : 0;
         progTitle = '整體盤點進度';
-        progSub = `(採購已鎖定確認 ${buyerLocked} / ${total} 筆)`;
-        barColor = 'bg-purple-600';
-        textColor = 'text-purple-700';
+        progSub = `採購已鎖定確認 ${buyerLocked} / ${total} 筆`;
+        progRemainText = total === 0 ? '尚未匯入盤點品項' : `初盤 ${warehouseDone} 筆 · 品管 ${qcDone} 筆 · 採購鎖定 ${buyerLocked} 筆`;
+        ringTheme = {
+          startColor: '#d8b4fe',
+          endColor: '#6b21a8',
+          trackColor: '#f3e8ff',
+          textColor: 'text-purple-700',
+          badgeBg: 'bg-purple-50 text-purple-800 border-purple-200'
+        };
 
         dashHtml = `
           <div class="space-y-2">
@@ -2348,14 +2402,46 @@
         `;
       }
 
+      // 計算 SVG 圓環幾何參數 (附圖漸層圓環進度樣式)
+      const radius = 31;
+      const circumference = 2 * Math.PI * radius;
+      const clampedPercent = Math.max(0, Math.min(100, percent));
+      const strokeOffset = circumference * (1 - clampedPercent / 100);
+      const gradId = `ringGrad_${currentRole}`;
+
       dashEl.innerHTML = dashHtml;
       progEl.innerHTML = `
-        <div class="flex justify-between items-center text-xs text-slate-600 font-semibold mb-1">
-          <span>${progTitle} <span class="text-[11px] text-slate-400 font-normal">${progSub}</span></span>
-          <span class="${textColor} font-bold">${percent}%</span>
-        </div>
-        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
-          <div class="${barColor} h-2.5 rounded-full transition-all duration-300" style="width: ${percent}%"></div>
+        <div class="flex items-center gap-4">
+          <div class="relative w-20 h-20 shrink-0 flex items-center justify-center">
+            <svg class="w-20 h-20" viewBox="0 0 80 80">
+              <defs>
+                <linearGradient id="${gradId}" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stop-color="${ringTheme.startColor}" />
+                  <stop offset="100%" stop-color="${ringTheme.endColor}" />
+                </linearGradient>
+              </defs>
+              <!-- 淺色背景底環 -->
+              <circle cx="40" cy="40" r="${radius}" fill="none" stroke="${ringTheme.trackColor}" stroke-width="9" />
+              <!-- 部門漸層進度圓弧 -->
+              <circle cx="40" cy="40" r="${radius}" fill="none"
+                stroke="url(#${gradId})"
+                stroke-width="9"
+                stroke-linecap="${clampedPercent > 0 ? 'round' : 'butt'}"
+                stroke-dasharray="${circumference.toFixed(2)}"
+                stroke-dashoffset="${strokeOffset.toFixed(2)}"
+                transform="rotate(-90 40 40)"
+                style="transition: stroke-dashoffset 0.4s ease;" />
+            </svg>
+            <span class="absolute text-base font-black text-slate-800 tracking-tight">${clampedPercent}%</span>
+          </div>
+
+          <div class="flex-1 min-w-0 space-y-1">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <span class="text-sm font-bold text-slate-800">${progTitle}</span>
+              <span class="text-xs font-bold px-2.5 py-0.5 rounded-full border ${ringTheme.badgeBg}">${progSub}</span>
+            </div>
+            <p class="text-xs text-slate-500">${progRemainText}</p>
+          </div>
         </div>
       `;
     }
@@ -2370,9 +2456,65 @@
 
     function openImportModal() { 
       if (currentRole !== 'admin') { alert('只有管理員可以匯入主檔'); return; }
+      populateImportCompanyOverrideOptions();
       document.getElementById('importModal').classList.remove('hidden'); 
     }
     function closeImportModal() { document.getElementById('importModal').classList.add('hidden'); }
+
+    // 填入匯入視窗「指定本次匯入的公司」下拉選項
+    function populateImportCompanyOverrideOptions() {
+      const select = document.getElementById('importCompanyOverrideSelect');
+      if (!select) return;
+      const prevVal = select.value || '__file__';
+      const companies = [...new Set(inventoryData.map(i => (i.company || '').trim()).filter(Boolean))].sort();
+
+      select.innerHTML = `<option value="__file__">依檔案內容 (若檔案無公司欄則留空)</option>` +
+        companies.map(c => `<option value="${c}">${c}</option>`).join('') +
+        `<option value="__custom__">＋ 手動輸入新公司名稱...</option>`;
+
+      if (prevVal === '__file__' || prevVal === '__custom__' || companies.includes(prevVal)) {
+        select.value = prevVal;
+      } else {
+        select.value = '__file__';
+      }
+      handleImportCompanyOverrideChange(false);
+    }
+
+    function handleImportCompanyOverrideChange(shouldReapply = true) {
+      const select = document.getElementById('importCompanyOverrideSelect');
+      const customInput = document.getElementById('importCustomCompanyInput');
+      if (!select || !customInput) return;
+
+      if (select.value === '__custom__') {
+        customInput.classList.remove('hidden');
+        if (shouldReapply) customInput.focus();
+      } else {
+        customInput.classList.add('hidden');
+      }
+
+      if (shouldReapply && currentRawArrayBuffer) {
+        parseSelectedFile();
+      }
+    }
+
+    function reapplyImportCompanyOverride() {
+      if (currentRawArrayBuffer) {
+        parseSelectedFile();
+      }
+    }
+
+    function getImportCompanyOverrideValue() {
+      const select = document.getElementById('importCompanyOverrideSelect');
+      const customInput = document.getElementById('importCustomCompanyInput');
+      if (!select) return { active: false, value: '' };
+      if (select.value === '__file__') {
+        return { active: false, value: '' };
+      }
+      if (select.value === '__custom__') {
+        return { active: true, value: (customInput?.value || '').trim() };
+      }
+      return { active: true, value: select.value.trim() };
+    }
 
     function handleFileSelect(event) {
       const file = event.target.files[0];
@@ -2387,7 +2529,7 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Excel / CSV 解析 (支援多種日期格式正規化)
+    // Excel / CSV 智慧標題解析 (防止欄位錯位，保留產品編號開頭補零)
     function parseSelectedFile() {
       if (!currentRawArrayBuffer) return;
       const encodingChoice = document.getElementById('encodingSelect').value;
@@ -2431,63 +2573,64 @@
         return;
       }
 
-      const headers = rawJson[0].map(h => String(h || '').trim().toLowerCase());
+      const headers = rawJson[0].map(h => String(h || '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim().toLowerCase());
       
-      let skuIdx = headers.findIndex(h => h.includes('sku') || h.includes('編號') || h.includes('料號'));
-      let nameIdx = headers.findIndex(h => h.includes('品名') || h.includes('名稱'));
-      let catIdx = headers.findIndex(h => h.includes('類別') || h.includes('分類'));
-      let locIdx = headers.findIndex(h => h.includes('儲位') || h.includes('地點') || h.includes('位置') || h.includes('庫位'));
-      let qtyIdx = headers.findIndex(h => h.includes('帳面') || h.includes('數量') || h.includes('庫存'));
-      let unitIdx = headers.findIndex(h => h.includes('單位'));
-      let batchIdx = headers.findIndex(h => h.includes('批號') || h.includes('批次'));
-      let expIdx = headers.findIndex(h => h.includes('效期') || h.includes('有效') || h.includes('到期') || h.includes('期限') || h.includes('日期'));
-      let compIdx = headers.findIndex(h => h.includes('公司') || h.includes('廠區') || h.includes('company'));
+      // 嚴格依標題名稱尋找欄位索引（找不到時保持 -1，絕不強制錯抓隔壁欄位）
+      const skuIdx = headers.findIndex(h => h.includes('產品編號') || h.includes('sku') || h === '編號' || h.includes('料號'));
+      const nameIdx = headers.findIndex(h => h.includes('產品品名') || h.includes('品名') || h.includes('名稱'));
+      const batchIdx = headers.findIndex(h => h.includes('產品批號') || h.includes('批號') || h.includes('批次'));
+      const expIdx = headers.findIndex(h => h.includes('有效日期') || h.includes('效期') || h.includes('有效') || h.includes('到期') || h.includes('期限'));
+      const qtyIdx = headers.findIndex(h => h.includes('帳面數量') || h.includes('帳面') || h === '數量' || h.includes('數量') || h.includes('庫存'));
+      const unitIdx = headers.findIndex(h => h === '單位' || h.includes('單位'));
+      const locIdx = headers.findIndex(h => h === '倉庫' || h.includes('倉庫') || h.includes('儲位') || h.includes('地點') || h.includes('位置') || h.includes('庫位'));
+      const compIdx = headers.findIndex(h => h.includes('所屬公司') || h.includes('公司') || h.includes('廠區') || h.includes('company'));
+      const catIdx = headers.findIndex(h => h === '類別' || h.includes('類別') || h.includes('分類'));
 
-      if (skuIdx === -1) skuIdx = 0;
-      if (nameIdx === -1) nameIdx = 1;
-      if (catIdx === -1) catIdx = 2;
-      if (locIdx === -1) locIdx = 3;
-      if (qtyIdx === -1) qtyIdx = 4;
-      if (unitIdx === -1) unitIdx = 5;
-      if (batchIdx === -1) batchIdx = 6;
-      if (expIdx === -1) expIdx = 7;
-      if (compIdx === -1 && headers.length > 8) compIdx = 8;
+      if (skuIdx === -1 && nameIdx === -1) {
+        alert('找不到「產品編號」或「產品品名」標題欄位，請確認第一列為欄位名稱列！');
+        return;
+      }
 
+      const companyOverride = getImportCompanyOverrideValue();
       pendingParsedData = [];
 
       for (let i = 1; i < rawJson.length; i++) {
         const row = rawJson[i];
         if (!row || row.length === 0) continue;
 
-        const skuVal = String(row[skuIdx] !== undefined ? row[skuIdx] : '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
-        const nameVal = String(row[nameIdx] !== undefined ? row[nameIdx] : '').trim();
+        // 保留開頭補零（如 0099008）
+        const skuVal = skuIdx !== -1 ? String(row[skuIdx] ?? '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim() : '';
+        const nameVal = nameIdx !== -1 ? String(row[nameIdx] ?? '').trim() : '';
         
         if (!skuVal && !nameVal) continue;
 
-        let rawQty = String(row[qtyIdx] || '0').replace(/[^0-9.-]/g, '');
-        let parsedQty = round4(parseFloat(rawQty) || 0);
+        const rawQtyStr = qtyIdx !== -1 ? String(row[qtyIdx] ?? '0').replace(/[^0-9.-]/g, '') : '0';
+        const parsedQty = round4(parseFloat(rawQtyStr) || 0);
 
-        // 正規化有效日期為 YYYY-MM-DD
-        const expDateStr = normalizeDateString(row[expIdx]);
-
-        const compVal = compIdx !== -1 ? String(row[compIdx] !== undefined ? row[compIdx] : '').trim() : '';
+        const batchVal = batchIdx !== -1 ? String(row[batchIdx] ?? '').trim() : '';
+        const expDateStr = expIdx !== -1 ? normalizeDateString(row[expIdx]) : '';
+        const unitVal = unitIdx !== -1 ? (String(row[unitIdx] ?? '').trim() || 'KG') : 'KG';
+        const locVal = locIdx !== -1 ? String(row[locIdx] ?? '').trim() : '';
+        const fileCompVal = compIdx !== -1 ? String(row[compIdx] ?? '').trim() : '';
+        const finalCompVal = companyOverride.active ? companyOverride.value : fileCompVal;
+        const catVal = catIdx !== -1 ? String(row[catIdx] ?? '').trim() : '';
 
         const generatedId = 'item_' + Date.now() + '_' + Math.random().toString(36).substr(2, 5);
         pendingParsedData.push({
           id: generatedId,
           sku: skuVal,
           name: nameVal,
-          category: String(row[catIdx] || '原料').trim(),
-          location: String(row[locIdx] || '').trim(),
+          category: catVal,
+          location: locVal,
           looseLocation: '',
-          company: compVal,
+          company: finalCompVal,
           systemQty: parsedQty,
           intactQty: parsedQty,
           looseQty: 0,
           actualQty: parsedQty,
           officialActualQty: null,
-          unit: String(row[unitIdx] || 'kg').trim(),
-          batchNo: String(row[batchIdx] || '').trim(),
+          unit: unitVal,
+          batchNo: batchVal,
           expDate: expDateStr,
           warehouseCompleted: false,
           warehouseAuditor: '',
@@ -2508,16 +2651,17 @@
       document.getElementById('parsedCount').innerText = pendingParsedData.length;
       document.getElementById('importPreviewTable').innerHTML = pendingParsedData.slice(0, 6).map(item => `
         <tr class="border-b">
-          <td class="p-1 font-mono">${item.sku}</td>
-          <td class="p-1 truncate max-w-[90px]">${item.name}</td>
-          <td class="p-1 font-semibold">${item.category || '-'}</td>
+          <td class="p-1 font-mono font-bold text-slate-700">${item.sku || '-'}</td>
+          <td class="p-1 truncate max-w-[90px]">${item.name || '-'}</td>
           <td class="p-1 font-mono">${item.batchNo || '-'}</td>
           <td class="p-1 font-mono ${item.expDate ? 'text-emerald-700 font-bold' : 'text-slate-400'}">${item.expDate || '-'}</td>
-          <td class="p-1">${item.company || '-'}</td>
+          <td class="p-1">${item.location || '-'}</td>
+          <td class="p-1 font-semibold text-indigo-700">${item.company || '-'}</td>
+          <td class="p-1">${item.category || '-'}</td>
         </tr>
       `).join('');
       document.getElementById('importPreviewArea').classList.remove('hidden');
-      document.getElementById('confirmImportBtn').disabled = false;
+      document.getElementById('confirmImportBtn').disabled = pendingParsedData.length === 0;
     }
 
     function executeImport() {
@@ -2535,7 +2679,9 @@
         db.ref('inventory_items').update(updates);
       }
 
-      recordAuditLog(null, '匯入庫存主檔', `${mode === 'overwrite' ? '覆蓋模式' : '追加模式'}匯入共 ${pendingParsedData.length} 筆品項`);
+      const companyOverride = getImportCompanyOverrideValue();
+      const compLogText = companyOverride.active ? `（統一指定公司：${companyOverride.value || '空白'}）` : '';
+      recordAuditLog(null, '匯入庫存主檔', `${mode === 'overwrite' ? '覆蓋模式' : '追加模式'}匯入共 ${pendingParsedData.length} 筆品項${compLogText}`);
 
       closeImportModal();
       alert(`已成功上傳 ${pendingParsedData.length} 筆資料至資料庫！所有連線手機將即時更新。`);
@@ -2570,17 +2716,17 @@
         warehouse: {
           label: '倉管人員專屬報表',
           badgeClass: 'bg-emerald-100 text-emerald-800',
-          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、完整貨數量、散貨數量、倉管初盤總數、單位、初盤狀態、初盤人員、初盤時間'
+          cols: '產品編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、完整貨數量、散貨數量、倉管初盤總數、單位、初盤狀態、初盤人員、初盤時間'
         },
         qc: {
           label: '品管人員專屬報表',
           badgeClass: 'bg-indigo-100 text-indigo-800',
-          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、包裝是否完好、是否有散貨、品質(包裝樣式/顏色/風味/流動性)正常、品管檢查狀態、整體品質性狀、異常處置方式、品管備註、檢查人員、檢查時間、是否有照片'
+          cols: '產品編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、包裝是否完好、是否有散貨、品質(包裝樣式/顏色/風味/流動性)正常、品管檢查狀態、整體品質性狀、異常處置方式、品管備註、檢查人員、檢查時間、是否有照片'
         },
         buyer: {
           label: '採購人員專屬報表',
           badgeClass: 'bg-amber-100 text-amber-800',
-          cols: 'SKU編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、帳面數量、倉管初盤總數、正式實盤數量、盤差、單位、採購覆核說明、已盤點(採購鎖定)'
+          cols: '產品編號、品名、類別、所屬公司、產品批號、有效日期、完整貨儲存地點、散貨儲存地點、帳面數量、倉管初盤總數、正式實盤數量、盤差、單位、採購覆核說明、已盤點(採購鎖定)'
         },
         admin: {
           label: '管理員完整盤點總表',
@@ -2649,7 +2795,7 @@
       if (currentRole === 'warehouse') {
         roleFilePrefix = '倉管初盤報表';
         headers = [
-          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '產品編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
           '完整貨儲存地點', '散貨儲存地點', '完整貨數量', '散貨數量', '倉管初盤總數', '單位',
           '初盤狀態', '初盤人員', '初盤時間'
         ];
@@ -2679,7 +2825,7 @@
       } else if (currentRole === 'qc') {
         roleFilePrefix = '品管檢查報表';
         headers = [
-          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '產品編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
           '完整貨儲存地點', '散貨儲存地點', '包裝是否完好', '是否有散貨',
           '品質(包裝樣式/顏色/風味/流動性)正常', '品管檢查狀態', '整體品質性狀',
           '異常處置方式', '品管備註', '品管檢查人員', '品管檢查時間', '是否有照片'
@@ -2710,7 +2856,7 @@
       } else if (currentRole === 'buyer') {
         roleFilePrefix = '採購盤點報表';
         headers = [
-          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '產品編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
           '完整貨儲存地點', '散貨儲存地點', '帳面數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
           '採購覆核說明', '已盤點(採購鎖定)'
         ];
@@ -2741,7 +2887,7 @@
         // Admin 完整盤點總表
         roleFilePrefix = '年度庫存盤點總表';
         headers = [
-          'SKU編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
+          '產品編號', '品名', '類別', '所屬公司', '產品批號', '有效日期',
           '完整貨儲存地點', '散貨儲存地點',
           '帳面數量', '完整貨數量', '散貨數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
           '初盤狀態', '初盤人員', '初盤時間',
@@ -2811,9 +2957,9 @@
     }
 
     function downloadSampleCSV() {
-      let csv = '\uFEFFSKU編號,品名,類別,儲存地點,帳面數量,單位,產品批號,有效日期,所屬公司\n';
-      csv += '0012001,乙基麥芽酚,原料,1F原料區,679.95,KG,201410,2027-08-08,佳津\n';
-      csv += '0012002,鋁箔立袋(500g),包材,1F倉庫(前),1200,PCS,202603,2029-12-31,總公司\n';
+      let csv = '\uFEFF產品編號,產品品名,產品批號,有效日期,數量,單位,倉庫,所屬公司,類別\n';
+      csv += '0099008,香草酒香料,BF1100106,2028-11-05,4,KG,081,佳津,原料\n';
+      csv += '0012002,鋁箔立袋(500g),202603,2029-12-31,1200,PCS,1F倉庫(前),總公司,包材\n';
       const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
