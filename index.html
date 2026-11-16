@@ -20,6 +20,19 @@
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     body { -webkit-tap-highlight-color: transparent; }
+    /* 手機版輸入框與下拉選單字級設為 16px，避免 iOS Safari 自動放大畫面 */
+    @media (max-width: 767px) {
+      #itemList input[type="text"],
+      #itemList input[type="number"],
+      #itemList input[type="date"],
+      #itemList select,
+      #addItemModal input[type="text"],
+      #addItemModal input[type="number"],
+      #addItemModal input[type="date"],
+      #addItemModal select {
+        font-size: 16px !important;
+      }
+    }
   </style>
 </head>
 <body id="appBody" class="bg-slate-100 text-slate-800 font-sans min-h-screen flex flex-col justify-between transition-colors duration-300">
@@ -27,7 +40,7 @@
   <div>
     <!-- 頂部導覽列 (隨角色切換背景色) -->
     <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+      <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
         <div class="flex items-center space-x-2 shrink-0">
           <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
           <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
@@ -68,7 +81,7 @@
       </div>
     </header>
 
-    <main class="max-w-4xl mx-auto px-3 pt-3">
+    <main class="max-w-6xl mx-auto px-3 pt-3">
       <!-- 全域鎖定提示條 -->
       <div id="globalLockNotice" class="hidden bg-amber-500 text-white font-bold text-xs p-2.5 rounded-xl shadow-sm mb-3 flex items-center justify-between">
         <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
@@ -112,28 +125,28 @@
           </button>
         </div>
 
-        <!-- 第二排：多維度下拉篩選與排序 -->
-        <div class="flex flex-wrap gap-1.5">
-          <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+        <!-- 第二排：多維度下拉篩選與排序 (手機 2 欄整齊排列、電腦 6 欄單排緊湊顯示) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
+          <select id="companyFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部公司</option>
           </select>
-          <select id="locationFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="locationFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部倉庫/儲位</option>
           </select>
-          <select id="categoryFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="categoryFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部類別</option>
           </select>
-          <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="statusFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部狀態</option>
           </select>
-          <select id="sortSelect" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700" title="列表排序方式">
+          <select id="sortSelect" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700" title="列表排序方式">
             <option value="default">預設排序</option>
             <option value="location_asc">依倉庫/儲位</option>
             <option value="exp_asc">依效期 (近→遠)</option>
             <option value="diff_desc">依盤差 (大→小)</option>
             <option value="sku_asc">依產品編號</option>
           </select>
-          <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
+          <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
             <option value="5" selected>每頁 5 筆</option>
             <option value="20">每頁 20 筆</option>
             <option value="50">每頁 50 筆</option>
@@ -193,7 +206,7 @@
   </div>
 
   <!-- 頁尾版權宣告 -->
-  <footer class="max-w-4xl w-full mx-auto px-4 py-6 mt-4 text-center text-xs text-slate-400">
+  <footer class="max-w-6xl w-full mx-auto px-4 py-6 mt-4 text-center text-xs text-slate-400">
     Copyright © 2026–2026 WIC. All rights reserved.
   </footer>
 
@@ -371,7 +384,7 @@
 
   <!-- 管理員全站操作紀錄後台 Modal (獨立儲存於 audit_logs，按需載入) -->
   <div id="auditLogModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="flex justify-between items-center px-4 py-3 bg-purple-950 text-white">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
@@ -925,7 +938,7 @@
       return companyColorMap[key] || DEFAULT_COMPANY_THEME;
     }
 
-    function getCategoryBadgeHtml(category) {
+    function getCategoryBadgeHtml(category, extraWrapperClass = '') {
       const cat = (category || '').trim();
       if (!cat) return '';
 
@@ -944,8 +957,8 @@
       }
 
       return `
-        <div class="relative group inline-block">
-          <span class="text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid ${iconClass} mr-1"></i>${escapeHtml(cat)}</span>
+        <div class="relative group inline-block shrink-0 ${extraWrapperClass}">
+          <span class="inline-flex items-center whitespace-nowrap text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid ${iconClass} mr-1"></i>${escapeHtml(cat)}</span>
           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
             物料類別 (${escapeHtml(cat)})
           </div>
@@ -1908,51 +1921,99 @@
         }
 
         return `
-          <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
+          <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 md:px-4 md:py-2.5 transition">
             
-            <!-- 卡片頂部標頭 (標籤列獨立阻斷點擊展開，點擊品名或右側箭頭才會展開卡片) -->
-            <div class="flex items-center justify-between gap-2">
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
-                <div class="flex-1 min-w-0">
+            <!-- 響應式卡片標頭：手機版狀態列置頂釋放全寬、品名放大獨佔一列、核心標籤不折行並排；電腦版緊湊橫向展開 -->
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
+              
+              <!-- 狀態列與操作按鈕 (手機版在最上方 order-1，電腦版移至右側 order-2) -->
+              <div class="flex items-center justify-between md:justify-end gap-1.5 shrink-0 order-1 md:order-2 pb-1.5 md:pb-0 border-b md:border-b-0 border-slate-200/70">
+                <!-- 手機版左側放置勾選框，方便單手與狀態列同排操作 -->
+                <div class="flex items-center gap-2 md:hidden">
+                  <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
+                  <span class="text-[11px] font-bold text-slate-400">選取</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 flex-wrap justify-end">
+                  <!-- 倉管一鍵「帳實相符」快速初盤按鈕 -->
+                  ${(!isWarehouseDone && canEditWarehouse) ? `
+                    <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
+                      <i class="fa-solid fa-check-double mr-1"></i>帳實相符
+                    </button>
+                  ` : ''}
+
+                  <!-- 倉管初盤狀態 -->
+                  <span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/90 border border-slate-200 text-slate-500'}">
+                    ${isWarehouseDone ? '<i class="fa-solid fa-check mr-1"></i>已初盤' : '待初盤'}
+                  </span>
+
+                  <!-- 品管檢查狀態 -->
+                  ${isAudited 
+                    ? `<span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                        <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-1"></i>${isAbnormal ? '異常' : '正常'}
+                       </span>` 
+                    : `<span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/90 border border-slate-200 text-slate-500">待檢查</span>`}
+
+                  <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold shrink-0" title="${isExpanded ? '收合' : '展開'}">
+                    <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
+                  </button>
+                  ${currentRole === 'admin' ? `
+                    <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs shrink-0" title="刪除品項">
+                      <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                  ` : ''}
+                </div>
+              </div>
+
+              <!-- 左側主資訊區 (手機版在下方 order-2 享 100% 寬度；電腦版在左側 order-1) -->
+              <div class="flex items-start md:items-center gap-2.5 flex-1 min-w-0 order-2 md:order-1">
+                <!-- 電腦版勾選框 -->
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="hidden md:block w-4 h-4 text-indigo-600 rounded shrink-0">
+                
+                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 md:gap-3">
                   
-                  <!-- 標籤資訊列 (點擊此區不會誤觸展開卡片) -->
-                  <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap cursor-default select-none">
+                  <!-- 品名標題列：手機版獨佔第一行並放大字級 (16px 粗體) 一眼辨識；電腦版固定適中寬度緊湊對齊 -->
+                  <div onclick="toggleCardExpand('${item.id}')" class="cursor-pointer group/title md:w-52 lg:w-64 shrink-0">
+                    <h2 class="font-bold text-base md:text-sm text-slate-900 leading-snug md:truncate group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
+                  </div>
+
+                  <!-- 標籤資訊列：手機版精簡顯示核心欄位(料號/批號/儲位/狀態警示)，輔助資訊(公司/類別/效期)收合時在手機版隱藏以維持清爽，展開或電腦版完整顯示 -->
+                  <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 cursor-default select-none">
                     
                     ${item.company ? `
-                      <div class="relative group inline-block">
-                        <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
+                      <div class="relative group ${isExpanded ? 'inline-block' : 'hidden md:inline-block'} shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           所屬公司
                         </div>
                       </div>
                     ` : ''}
 
-                    <div class="relative group inline-block">
-                      <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded">${escapeHtml(item.sku || '無編號')}</span>
+                    <div class="relative group inline-block shrink-0">
+                      <span class="inline-flex items-center whitespace-nowrap font-mono text-xs font-bold text-slate-700 bg-white/95 border border-slate-200 px-1.5 py-0.5 rounded">${escapeHtml(item.sku || '無編號')}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                         產品編號
                       </div>
                     </div>
 
-                    ${getCategoryBadgeHtml(item.category)}
+                    ${getCategoryBadgeHtml(item.category, isExpanded ? '' : 'hidden md:inline-block')}
 
                     ${hasLooseInfo ? `
-                      <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${escapeHtml(item.location || '未指定')}</span>
+                      <div class="relative group inline-block shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${escapeHtml(item.location || '未指定')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
                       </div>
-                      <div class="relative group inline-block">
-                        <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${escapeHtml(item.looseLocation || '未指定')}</span>
+                      <div class="relative group inline-block shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${escapeHtml(item.looseLocation || '未指定')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           散貨儲存地點
                         </div>
                       </div>
                     ` : `
-                      <div class="relative group inline-block">
-                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(item.location || '未指定地點')}</span>
+                      <div class="relative group inline-block shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(item.location || '未指定地點')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
@@ -1960,8 +2021,8 @@
                     `}
 
                     ${item.batchNo ? `
-                      <div class="relative group inline-block">
-                        <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${escapeHtml(item.batchNo)}</span>
+                      <div class="relative group inline-block shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${escapeHtml(item.batchNo)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           產品批號
                         </div>
@@ -1969,101 +2030,65 @@
                     ` : ''}
 
                     ${normalizedExp ? `
-                      <div class="relative group inline-block">
-                        <span class="text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-regular fa-calendar-check mr-1"></i>${escapeHtml(normalizedExp)}</span>
+                      <div class="relative group ${isExpanded || isExpired || isExpiringSoon ? 'inline-block' : 'hidden md:inline-block'} shrink-0">
+                        <span class="inline-flex items-center whitespace-nowrap text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-regular fa-calendar-check mr-1"></i>${escapeHtml(normalizedExp)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           ${expTooltip}
                         </div>
                       </div>
                     ` : ''}
 
-                    ${isExpiringSoon ? `<span class="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold">即期品 (${expInfo.daysLeft}天)</span>` : ''}
-                    ${isExpired ? `<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold">已過期</span>` : ''}
-                    ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
-                    ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
-                  </div>
-
-                  <!-- 品名標題列：點擊可展開 / 收合卡片 -->
-                  <div onclick="toggleCardExpand('${item.id}')" class="cursor-pointer pt-1 group/title">
-                    <h2 class="font-bold text-sm text-slate-800 truncate group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
+                    ${isExpiringSoon ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">即期品 (${expInfo.daysLeft}天)</span>` : ''}
+                    ${isExpired ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold shrink-0">已過期</span>` : ''}
+                    ${item.lockedByBuyer ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold shrink-0"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold shrink-0">盤差: ${diff}</span>` : ''}
                   </div>
                 </div>
-              </div>
-
-              <!-- 右側階段狀態標籤與快速操作群組 -->
-              <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
-                <!-- 倉管一鍵「帳實相符」快速初盤按鈕 -->
-                ${(!isWarehouseDone && canEditWarehouse) ? `
-                  <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
-                    <i class="fa-solid fa-check-double mr-0.5"></i>帳實相符
-                  </button>
-                ` : ''}
-
-                <!-- 倉管初盤狀態 -->
-                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/80 border border-slate-200 text-slate-500'}">
-                  ${isWarehouseDone ? '<i class="fa-solid fa-check mr-0.5"></i>已初盤' : '待初盤'}
-                </span>
-
-                <!-- 品管檢查狀態 -->
-                ${isAudited 
-                  ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
-                      <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-0.5"></i>${isAbnormal ? '異常' : '正常'}
-                     </span>` 
-                  : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/80 border border-slate-200 text-slate-500">待檢查</span>`}
-
-                <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
-                  <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
-                </button>
-                ${currentRole === 'admin' ? `
-                  <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs" title="刪除品項">
-                    <i class="fa-solid fa-trash-can"></i>
-                  </button>
-                ` : ''}
               </div>
             </div>
 
             ${isExpanded ? `
-              <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/90 rounded-lg p-2.5">
+              <div class="pt-3 mt-2.5 border-t border-slate-200/80 space-y-3 bg-white/95 rounded-lg p-3">
                 
-                <!-- 倉管雙儲存地點下拉選單 -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                <!-- 倉管雙儲存地點下拉選單 (電腦版並排、手機版全寬) -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">
                       <i class="fa-solid fa-warehouse text-emerald-600 mr-1"></i>完整貨儲存地點 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：
                     </label>
-                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
+                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
                       ${renderLocationOptions(item.location, '-- 請選擇完整貨地點 --')}
                     </select>
                   </div>
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-1">
                       <i class="fa-solid fa-box-open text-teal-600 mr-1"></i>散貨儲存地點 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：
                     </label>
-                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'looseLocation', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
+                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'looseLocation', this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
                       ${renderLocationOptions(item.looseLocation, '-- 無散貨 / 未指定 --')}
                     </select>
                   </div>
                 </div>
 
-                <!-- 倉管與品管檢視：產品批號與有效日期為唯讀資訊 -->
+                <!-- 倉管與品管檢視：手機版上方標籤已顯示批號與效期，避免重複占版面僅於電腦版顯示唯讀明細框 -->
                 ${(currentRole !== 'buyer' && currentRole !== 'admin') ? `
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="hidden md:grid md:grid-cols-2 gap-2.5">
                     <div>
                       <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
-                      <div class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs font-mono bg-slate-100 text-slate-700">${escapeHtml(item.batchNo || '未填寫')}</div>
+                      <div class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono bg-slate-100 text-slate-700">${escapeHtml(item.batchNo || '未填寫')}</div>
                     </div>
                     <div>
                       <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
-                      <div class="w-full border ${isExpired ? 'border-rose-300 bg-rose-50 text-rose-700 font-bold' : isExpiringSoon ? 'border-orange-300 bg-orange-50 text-orange-700 font-bold' : 'border-slate-200 bg-slate-100 text-slate-700'} rounded px-2 py-1.5 text-xs font-mono">${escapeHtml(normalizedExp || '未填寫')}</div>
+                      <div class="w-full border ${isExpired ? 'border-rose-300 bg-rose-50 text-rose-700 font-bold' : isExpiringSoon ? 'border-orange-300 bg-orange-50 text-orange-700 font-bold' : 'border-slate-200 bg-slate-100 text-slate-700'} rounded-lg px-2.5 py-1.5 text-xs font-mono">${escapeHtml(normalizedExp || '未填寫')}</div>
                     </div>
                   </div>
                   ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
                   ${isExpiringSoon ? `<div class="text-[11px] text-orange-600 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> 即期品提醒：距離有效日期僅剩 ${expInfo.daysLeft} 天！</div>` : ''}
                 ` : ''}
 
-                <!-- 數量顯示與倉管初盤輸入區 -->
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2">
-                  <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200/70">
+                <!-- 數量顯示與倉管初盤輸入區 (電腦版多欄並排，手機版 2 欄好輸入) -->
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2.5">
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
                     <div>
                       <span class="text-slate-500">帳面數量：</span>
                       <span class="font-bold text-slate-700">${item.systemQty} ${escapeHtml(item.unit)}</span>
@@ -2078,36 +2103,36 @@
                       ${isOfficialAdjusted ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold ml-1">採購修訂</span>` : ''}
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 gap-2">
+                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 items-end">
                     <div>
-                      <label class="block text-[11px] font-bold text-slate-600 mb-0.5">完整貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                      <input type="number" step="any" id="intactInput_${item.id}" value="${intactQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'intact', this.value)" class="w-full border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-600">
+                      <label class="block text-[11px] font-bold text-slate-600 mb-1">完整貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
+                      <input type="number" step="any" id="intactInput_${item.id}" value="${intactQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'intact', this.value)" class="w-full border border-slate-300 bg-white rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-600">
                     </div>
                     <div>
-                      <label class="block text-[11px] font-bold text-teal-700 mb-0.5">散貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                      <input type="number" step="any" id="looseInput_${item.id}" value="${looseQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'loose', this.value)" class="w-full border border-teal-300 bg-white rounded px-2 py-1 text-xs font-bold text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100 disabled:text-slate-600">
+                      <label class="block text-[11px] font-bold text-teal-700 mb-1">散貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
+                      <input type="number" step="any" id="looseInput_${item.id}" value="${looseQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'loose', this.value)" class="w-full border border-teal-300 bg-white rounded-lg px-2.5 py-1.5 text-xs font-bold text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100 disabled:text-slate-600">
                     </div>
-                  </div>
 
-                  ${(currentRole === 'warehouse' || currentRole === 'admin') ? `
-                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
-                      <div class="text-[11px] text-slate-500">
-                        ${isWarehouseDone 
-                          ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${escapeHtml(item.warehouseAuditor || '')} ${escapeHtml(item.warehouseTime || '')})</span>` 
-                          : `<span>確認儲位與初盤數量後請點擊儲存：</span>`}
-                      </div>
-                      <div class="flex gap-1.5">
-                        <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
-                          <i class="fa-solid fa-floppy-disk mr-1"></i>${isWarehouseDone ? '更新初盤紀錄' : '儲存初盤紀錄'}
-                        </button>
-                        ${isWarehouseDone && canEditWarehouse ? `
-                          <button onclick="resetWarehouseCheck('${item.id}')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
-                            重置
+                    ${(currentRole === 'warehouse' || currentRole === 'admin') ? `
+                      <div class="col-span-2 flex flex-wrap items-center justify-between md:justify-end gap-2 pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-200/70">
+                        <div class="text-[11px] text-slate-500">
+                          ${isWarehouseDone 
+                            ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${escapeHtml(item.warehouseAuditor || '')})</span>` 
+                            : `<span class="md:hidden">確認儲位與數量後儲存：</span>`}
+                        </div>
+                        <div class="flex gap-1.5">
+                          <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
+                            <i class="fa-solid fa-floppy-disk mr-1"></i>${isWarehouseDone ? '更新初盤紀錄' : '儲存初盤紀錄'}
                           </button>
-                        ` : ''}
+                          ${isWarehouseDone && canEditWarehouse ? `
+                            <button onclick="resetWarehouseCheck('${item.id}')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+                              重置
+                            </button>
+                          ` : ''}
+                        </div>
                       </div>
-                    </div>
-                  ` : ''}
+                    ` : ''}
+                  </div>
                 </div>
 
                 <!-- 採購覆核與盤點鎖定區塊 -->
@@ -2123,14 +2148,14 @@
                       </button>
                     </div>
 
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5">
                       <div>
                         <label class="block text-[11px] font-bold text-amber-900 mb-0.5">產品批號：</label>
-                        <input type="text" value="${escapeHtml(item.batchNo || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-amber-300 rounded px-2 py-1 text-xs font-mono bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="text" value="${escapeHtml(item.batchNo || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-mono bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                       <div>
                         <label class="block text-[11px] font-bold text-amber-900 mb-0.5">有效日期：</label>
-                        <input type="date" value="${escapeHtml(normalizedExp)}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : isExpiringSoon ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-amber-300 bg-white'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="date" value="${escapeHtml(normalizedExp)}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : isExpiringSoon ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-amber-300 bg-white'} rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                       <div>
                         <div class="flex items-center justify-between mb-0.5">
@@ -2139,17 +2164,16 @@
                             <button onclick="resetOfficialActualQty('${item.id}')" class="text-[10px] text-amber-700 underline hover:text-amber-950" title="恢復帶入倉管初盤總數">帶入初盤</button>
                           ` : ''}
                         </div>
-                        <input type="number" step="any" value="${finalActual}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateOfficialActualQty('${item.id}', this.value)" class="w-full border border-amber-400 bg-white rounded px-2 py-1 text-xs font-black text-amber-950 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="number" step="any" value="${finalActual}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateOfficialActualQty('${item.id}', this.value)" class="w-full border border-amber-400 bg-white rounded-lg px-2.5 py-1.5 text-xs font-black text-amber-950 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                      </div>
+                      <div>
+                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">採購覆核說明：</label>
+                        <input type="text" value="${escapeHtml(item.buyerNote || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="差異原因、退貨或補發說明..." onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                     </div>
 
                     ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
                     ${isExpiringSoon ? `<div class="text-[11px] text-orange-600 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> 即期品提醒：距離有效日期僅剩 ${expInfo.daysLeft} 天！</div>` : ''}
-
-                    <div>
-                      <label class="block text-[11px] font-bold text-amber-900 mb-0.5">採購覆核說明：</label>
-                      <input type="text" value="${escapeHtml(item.buyerNote || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="採購對接說明 (如: 正式盤點差異原因、安排退貨、通知廠商補發...)" onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-amber-100/60 disabled:text-slate-500">
-                    </div>
                   </div>
                 ` : ((item.buyerNote || isOfficialAdjusted) ? `
                   <div class="text-xs bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-900 space-y-1">
@@ -2158,95 +2182,99 @@
                   </div>
                 ` : '')}
 
-                <!-- 品管現檢核取與判定區 -->
+                <!-- 品管現檢核取與判定區 (電腦版分為左右雙欄提升判讀與操作效率) -->
                 ${(currentRole === 'qc' || currentRole === 'admin') ? `
-                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
-                    <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                      <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
-                    </div>
-                    
-                    <div class="flex items-center justify-between">
-                      <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
-                      <div class="flex gap-1">
-                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
+                      <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                        <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
                       </div>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                      <span class="text-slate-600 font-medium">2. 是否有散貨 <span class="text-[10px] text-teal-600">(隨散貨數量連動)</span>：</span>
-                      <div class="flex gap-1">
-                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
-                      </div>
-                    </div>
-
-                    <div class="flex items-center justify-between">
-                      <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
-                      <div class="flex gap-1">
-                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
-                    <div class="grid grid-cols-2 gap-2">
-                      <button onclick="updateCondition('${item.id}', 'normal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
-                        <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
-                      </button>
-                      <button onclick="updateCondition('${item.id}', 'abnormal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
-                        <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
-                      </button>
-                    </div>
-                  </div>
-
-                  ${item.condition === 'abnormal' ? `
-                    <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
-                      <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
-                      <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" ${isQcLocked ? 'disabled' : ''} class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
-                        <option value="">-- 請選擇處置方式 --</option>
-                        <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
-                        <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
-                        <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
-                        <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
-                      </select>
-                    </div>
-                  ` : ''}
-
-                  <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
-                    <input type="text" value="${escapeHtml(item.note || '')}" ${isQcLocked ? 'disabled' : ''} placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                    ${item.condition === 'abnormal' && !isQcLocked ? `
-                      <div class="flex flex-wrap gap-1 mt-1">
-                        <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
-                        <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
-                        <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
-                      </div>
-                    ` : ''}
-                  </div>
-
-                  <div>
-                    <label class="block text-xs font-bold text-slate-600 mb-1">
-                      <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
-                    </label>
-                    <div class="flex items-center gap-2">
-                      ${!isQcLocked ? `
-                        <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-                          <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
-                          <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
-                        </label>
-                      ` : ''}
-                      ${item.photo ? `
-                        <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
-                          <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
-                          <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
+                      
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
+                        <div class="flex gap-1">
+                          <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                          <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
                         </div>
-                        <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
-                      ` : `
-                        <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
-                      `}
+                      </div>
+
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-600 font-medium">2. 是否有散貨 <span class="text-[10px] text-teal-600">(隨散貨數量連動)</span>：</span>
+                        <div class="flex gap-1">
+                          <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                          <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                        </div>
+                      </div>
+
+                      <div class="flex items-center justify-between">
+                        <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
+                        <div class="flex gap-1 shrink-0">
+                          <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                          <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div class="space-y-2.5">
+                      <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
+                        <div class="grid grid-cols-2 gap-2">
+                          <button onclick="updateCondition('${item.id}', 'normal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
+                            <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
+                          </button>
+                          <button onclick="updateCondition('${item.id}', 'abnormal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
+                            <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
+                          </button>
+                        </div>
+                      </div>
+
+                      ${item.condition === 'abnormal' ? `
+                        <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
+                          <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
+                          <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" ${isQcLocked ? 'disabled' : ''} class="w-full text-xs border border-rose-300 rounded-lg p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
+                            <option value="">-- 請選擇處置方式 --</option>
+                            <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
+                            <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
+                            <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
+                            <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
+                          </select>
+                        </div>
+                      ` : ''}
+
+                      <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
+                        <input type="text" value="${escapeHtml(item.note || '')}" ${isQcLocked ? 'disabled' : ''} placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                        ${item.condition === 'abnormal' && !isQcLocked ? `
+                          <div class="flex flex-wrap gap-1 mt-1">
+                            <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
+                            <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
+                            <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
+                          </div>
+                        ` : ''}
+                      </div>
+
+                      <div>
+                        <label class="block text-xs font-bold text-slate-600 mb-1">
+                          <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
+                        </label>
+                        <div class="flex items-center gap-2">
+                          ${!isQcLocked ? `
+                            <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
+                              <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
+                              <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
+                            </label>
+                          ` : ''}
+                          ${item.photo ? `
+                            <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
+                              <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
+                              <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
+                            </div>
+                            <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
+                          ` : `
+                            <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
+                          `}
+                        </div>
+                      </div>
                     </div>
                   </div>
 
