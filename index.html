@@ -55,15 +55,15 @@
       justify-content: center;
       box-sizing: border-box;
     }
-    .label-qr-square canvas,
-    .label-qr-square img {
+    .label-qr-square canvas {
       width: 100% !important;
       height: 100% !important;
       aspect-ratio: 1 / 1 !important;
       object-fit: contain !important;
+      display: block !important;
     }
-    /* 避免 qrcode.js 同時產生的 canvas 與 img 重複並排顯示（僅保留其中一個） */
-    .label-qr-square canvas + img {
+    /* 僅顯示高解析度 canvas，隱藏 qrcode.js 額外生成的 img 以避免重複或空白 */
+    .label-qr-square img {
       display: none !important;
     }
     /* 手機版預覽自適應等比例縮放容器，避免左側裁切且不影響實際 10x10cm 列印 */
@@ -3288,13 +3288,7 @@
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
           });
-          // 移除 qrcode.js 額外產生的冗餘標籤，確保容器內僅保留單一正方形 QR Code
-          const children = qrTarget.querySelectorAll('canvas, img');
-          if (children.length > 1) {
-            for (let i = 1; i < children.length; i++) {
-              children[i].remove();
-            }
-          }
+
         }
       }, 0);
 
