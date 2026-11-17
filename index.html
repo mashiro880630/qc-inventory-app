@@ -61,7 +61,22 @@
       height: 100% !important;
       aspect-ratio: 1 / 1 !important;
       object-fit: contain !important;
-      display: block !important;
+    }
+    /* 避免 qrcode.js 同時產生的 canvas 與 img 重複並排顯示（僅保留其中一個） */
+    .label-qr-square canvas + img {
+      display: none !important;
+    }
+    /* 手機版預覽自適應等比例縮放容器，避免左側裁切且不影響實際 10x10cm 列印 */
+    .label-preview-viewport {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: hidden;
+    }
+    .label-preview-scaler {
+      transform-origin: top center;
+      flex-shrink: 0;
     }
 
     @media print {
@@ -3115,6 +3130,7 @@
       }
       renderLabelQueueUI();
       document.getElementById('labelStudioModal').classList.remove('hidden');
+      requestAnimationFrame(() => adjustLabelPreviewScale());
     }
 
     function openLabelStudioWithItem(itemId) {
@@ -3128,6 +3144,7 @@
       handleLabelInventorySelect(itemId);
       renderLabelQueueUI();
       document.getElementById('labelStudioModal').classList.remove('hidden');
+      requestAnimationFrame(() => adjustLabelPreviewScale());
     }
 
     function closeLabelStudioModal() {
@@ -3271,11 +3288,52 @@
             colorLight: '#ffffff',
             correctLevel: QRCode.CorrectLevel.M
           });
+          // 移除 qrcode.js 額外產生的冗餘標籤，確保容器內僅保留單一正方形 QR Code
+          const children = qrTarget.querySelectorAll('canvas, img');
+          if (children.length > 1) {
+            for (let i = 1; i < children.length; i++) {
+              children[i].remove();
+            }
+          }
         }
       }, 0);
 
       return wrapper;
     }
+
+    // 依手機/視窗可用寬度自動等比例縮放 10x10cm 預覽框，確保完整置中不裁切
+    function adjustLabelPreviewScale() {
+      const viewport = document.getElementById('labelPreviewViewport');
+      const scaler = document.getElementById('labelPreviewScaler');
+      const mount = document.getElementById('labelPreviewMount');
+      if (!viewport || !scaler || !mount) return;
+      const sheet = mount.querySelector('.label-sheet-10x10');
+      if (!sheet) return;
+
+      // 先重設縮放以取得真實 100mm 像素寬高
+      scaler.style.transform = 'scale(1)';
+      viewport.style.height = '';
+
+      const availableWidth = viewport.clientWidth - 8;
+      const sheetWidth = sheet.offsetWidth;
+      const sheetHeight = sheet.offsetHeight;
+
+      if (availableWidth > 0 && sheetWidth > availableWidth) {
+        const scale = availableWidth / sheetWidth;
+        scaler.style.transform = `scale(${scale.toFixed(4)})`;
+        viewport.style.height = `${Math.ceil(sheetHeight * scale) + 8}px`;
+      } else {
+        scaler.style.transform = 'scale(1)';
+        viewport.style.height = `${sheetHeight + 8}px`;
+      }
+    }
+
+    window.addEventListener('resize', () => {
+      const modal = document.getElementById('labelStudioModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        adjustLabelPreviewScale();
+      }
+    });
 
     function renderLabelPreview() {
       const data = getCurrentLabelFormData();
@@ -3287,6 +3345,7 @@
       mount.innerHTML = '';
       const el = createLabel10x10Element(data, 'previewQrCanvasBox');
       mount.appendChild(el);
+      requestAnimationFrame(() => adjustLabelPreviewScale());
     }
 
     function addCurrentLabelToQueue() {
@@ -4266,9 +4325,11 @@
             <span class="text-[11px] bg-white px-2 py-0.5 rounded-full font-semibold text-slate-600 border">QR 2.6 × 2.6 cm</span>
           </div>
 
-          <!-- 10x10cm 預覽容器 -->
-          <div class="flex-1 flex items-center justify-center w-full overflow-auto py-1">
-            <div id="labelPreviewMount" class="shadow-xl"></div>
+          <!-- 10x10cm 預覽容器 (手機自動等比例縮放置中，不裁切左側文字) -->
+          <div id="labelPreviewViewport" class="flex-1 label-preview-viewport py-1">
+            <div id="labelPreviewScaler" class="label-preview-scaler">
+              <div id="labelPreviewMount" class="shadow-xl"></div>
+            </div>
           </div>
 
           <div class="w-full pt-3 mt-2 border-t border-slate-300 space-y-2">
