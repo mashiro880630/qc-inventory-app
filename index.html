@@ -16,21 +16,85 @@
   <!-- Firebase 8.x SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+  <!-- QRCode.js (生成正正方形 QR Code 出貨標籤) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     body { -webkit-tap-highlight-color: transparent; }
-    /* 手機版輸入框與下拉選單字級設為 16px，避免 iOS Safari 自動放大畫面 */
-    @media (max-width: 767px) {
-      #itemList input[type="text"],
-      #itemList input[type="number"],
-      #itemList input[type="date"],
-      #itemList select,
-      #addItemModal input[type="text"],
-      #addItemModal input[type="number"],
-      #addItemModal input[type="date"],
-      #addItemModal select {
-        font-size: 16px !important;
+
+    /* 10x10 cm (100mm x 100mm) 出貨標籤與正方形 QR Code 嚴格比例設定 */
+    .label-sheet-10x10 {
+      width: 100mm;
+      height: 100mm;
+      box-sizing: border-box;
+      background: #ffffff;
+      color: #0f172a;
+      border: 1.5px solid #0f172a;
+      padding: 4.5mm 5mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+      overflow: hidden;
+      position: relative;
+    }
+    .label-qr-square {
+      width: 26mm !important;
+      height: 26mm !important;
+      min-width: 26mm !important;
+      min-height: 26mm !important;
+      max-width: 26mm !important;
+      max-height: 26mm !important;
+      aspect-ratio: 1 / 1 !important;
+      padding: 1.8mm;
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
+    .label-qr-square canvas,
+    .label-qr-square img {
+      width: 100% !important;
+      height: 100% !important;
+      aspect-ratio: 1 / 1 !important;
+      object-fit: contain !important;
+      display: block !important;
+    }
+
+    @media print {
+      @page {
+        size: 100mm 100mm;
+        margin: 0;
+      }
+      body.printing-labels > *:not(#labelPrintContainer) {
+        display: none !important;
+      }
+      body.printing-labels {
+        background: #ffffff !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      body.printing-labels #labelPrintContainer {
+        display: block !important;
+        position: static !important;
+        width: 100mm !important;
+        margin: 0 !important;
+        padding: 0 !important;
+      }
+      .label-print-page {
+        width: 100mm !important;
+        height: 100mm !important;
+        page-break-after: always;
+        break-after: page;
+        margin: 0 !important;
+        box-shadow: none !important;
+      }
+      .label-print-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
       }
     }
   </style>
@@ -40,7 +104,7 @@
   <div>
     <!-- 頂部導覽列 (隨角色切換背景色) -->
     <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
-      <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+      <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
         <div class="flex items-center space-x-2 shrink-0">
           <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
           <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
@@ -57,6 +121,9 @@
 
           <!-- 管理員專屬功能按鈕 -->
           <div id="adminControls" class="flex items-center gap-1.5 hidden">
+            <button onclick="openLabelStudioModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition" title="管理員專用：10×10cm 出貨標籤與 QR Code 列印">
+              <i class="fa-solid fa-qrcode"></i> 標籤
+            </button>
             <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
               <i class="fa-solid fa-file-import"></i> 匯入
             </button>
@@ -81,7 +148,7 @@
       </div>
     </header>
 
-    <main class="max-w-6xl mx-auto px-3 pt-3">
+    <main class="max-w-4xl mx-auto px-3 pt-3">
       <!-- 全域鎖定提示條 -->
       <div id="globalLockNotice" class="hidden bg-amber-500 text-white font-bold text-xs p-2.5 rounded-xl shadow-sm mb-3 flex items-center justify-between">
         <span><i class="fa-solid fa-lock mr-1.5"></i> 【系統已全域鎖定】管理員已封存盤點資料，所有輸入與修改功能均已停用 (唯讀模式)。</span>
@@ -125,28 +192,28 @@
           </button>
         </div>
 
-        <!-- 第二排：多維度下拉篩選與排序 (手機 2 欄整齊排列、電腦 6 欄單排緊湊顯示) -->
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-1.5">
-          <select id="companyFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+        <!-- 第二排：多維度下拉篩選與排序 -->
+        <div class="flex flex-wrap gap-1.5">
+          <select id="companyFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部公司</option>
           </select>
-          <select id="locationFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="locationFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部倉庫/儲位</option>
           </select>
-          <select id="categoryFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="categoryFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部類別</option>
           </select>
-          <select id="statusFilter" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
+          <select id="statusFilter" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700">
             <option value="all">全部狀態</option>
           </select>
-          <select id="sortSelect" onchange="handleFilterChange()" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700" title="列表排序方式">
+          <select id="sortSelect" onchange="handleFilterChange()" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-medium text-slate-700" title="列表排序方式">
             <option value="default">預設排序</option>
             <option value="location_asc">依倉庫/儲位</option>
             <option value="exp_asc">依效期 (近→遠)</option>
             <option value="diff_desc">依盤差 (大→小)</option>
             <option value="sku_asc">依產品編號</option>
           </select>
-          <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="w-full bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
+          <select id="pageSizeSelect" onchange="handlePageSizeChange(this.value)" class="bg-slate-50 border border-slate-300 text-xs rounded-lg px-2 py-1.5 focus:outline-none font-semibold text-indigo-700" title="設定每頁顯示品項數量">
             <option value="5" selected>每頁 5 筆</option>
             <option value="20">每頁 20 筆</option>
             <option value="50">每頁 50 筆</option>
@@ -206,19 +273,25 @@
   </div>
 
   <!-- 頁尾版權宣告 -->
-  <footer class="max-w-6xl w-full mx-auto px-4 py-6 mt-4 text-center text-xs text-slate-400">
+  <footer class="max-w-4xl w-full mx-auto px-4 py-6 mt-4 text-center text-xs text-slate-400">
     Copyright © 2026–2026 WIC. All rights reserved.
   </footer>
 
-  <!-- 相機條碼掃描 Modal -->
+  <!-- 相機雙模條碼掃描 Modal (同時支援 1D Barcode 與 2D QR Code) -->
   <div id="barcodeScannerModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-4">
     <div class="bg-white rounded-xl max-w-md w-full p-4 shadow-2xl">
       <div class="flex justify-between items-center border-b pb-2 mb-3">
-        <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-barcode text-indigo-600 mr-1.5"></i>掃描產品條碼 / QR Code</h3>
+        <h3 class="font-bold text-slate-800 text-base flex items-center gap-1.5">
+          <i class="fa-solid fa-qrcode text-indigo-600"></i>
+          <span>雙模掃碼 (1D 條碼 / 2D QR Code)</span>
+        </h3>
         <button onclick="closeBarcodeScanner()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div id="qrReader" class="w-full rounded-lg overflow-hidden bg-slate-900 min-h-[240px]"></div>
-      <p id="scannerStatusText" class="text-xs text-slate-600 text-center mt-2.5 font-medium">請將條碼或 QR Code 對準鏡頭框內...</p>
+      <div class="bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1.5 mb-2.5 text-[11px] text-indigo-900 flex items-center justify-between">
+        <span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>自動辨識：一維條碼（料號）或二維 QR Code（料號|批號|效期|公司）</span>
+      </div>
+      <div id="qrReader" class="w-full rounded-lg overflow-hidden bg-slate-900 min-h-[250px]"></div>
+      <p id="scannerStatusText" class="text-xs text-slate-600 text-center mt-2.5 font-medium">請將一維條碼或正方形 QR Code 對準鏡頭框內...</p>
       <div class="flex justify-end mt-3 pt-2 border-t">
         <button onclick="closeBarcodeScanner()" class="px-4 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300">關閉鏡頭</button>
       </div>
@@ -234,8 +307,11 @@
       </div>
 
       <div class="space-y-2.5 text-xs">
-        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2 text-[11px] text-teal-800">
-          <i class="fa-solid fa-circle-info mr-1"></i> 現場補登品項的「帳面數量」將自動設為 <strong>0</strong>，實際清點數量將計入盤盈。
+        <div class="bg-teal-50 border border-teal-200 rounded-lg p-2 text-[11px] text-teal-800 flex items-center justify-between gap-2">
+          <span><i class="fa-solid fa-circle-info mr-1"></i> 現場補登品項的「帳面數量」將自動設為 <strong>0</strong>。</span>
+          <button type="button" onclick="openBarcodeScanner('addFullQr')" class="bg-slate-800 hover:bg-slate-700 text-white px-2.5 py-1 rounded-lg text-[11px] font-bold shrink-0 flex items-center gap-1 transition">
+            <i class="fa-solid fa-qrcode"></i> 掃碼自動帶入
+          </button>
         </div>
 
         <div class="grid grid-cols-2 gap-2">
@@ -384,7 +460,7 @@
 
   <!-- 管理員全站操作紀錄後台 Modal (獨立儲存於 audit_logs，按需載入) -->
   <div id="auditLogModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-3 sm:p-4">
-    <div class="bg-white rounded-xl max-w-6xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+    <div class="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="flex justify-between items-center px-4 py-3 bg-purple-950 text-white">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-clock-rotate-left text-amber-400"></i>
@@ -938,7 +1014,7 @@
       return companyColorMap[key] || DEFAULT_COMPANY_THEME;
     }
 
-    function getCategoryBadgeHtml(category, extraWrapperClass = '') {
+    function getCategoryBadgeHtml(category) {
       const cat = (category || '').trim();
       if (!cat) return '';
 
@@ -957,8 +1033,8 @@
       }
 
       return `
-        <div class="relative group inline-block shrink-0 ${extraWrapperClass}">
-          <span class="inline-flex items-center whitespace-nowrap text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid ${iconClass} mr-1"></i>${escapeHtml(cat)}</span>
+        <div class="relative group inline-block">
+          <span class="text-xs ${badgeStyle} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid ${iconClass} mr-1"></i>${escapeHtml(cat)}</span>
           <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
             物料類別 (${escapeHtml(cat)})
           </div>
@@ -1921,99 +1997,51 @@
         }
 
         return `
-          <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 md:px-4 md:py-2.5 transition">
+          <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
             
-            <!-- 響應式卡片標頭：手機版狀態列置頂釋放全寬、品名放大獨佔一列、核心標籤不折行並排；電腦版緊湊橫向展開 -->
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 md:gap-3">
-              
-              <!-- 狀態列與操作按鈕 (手機版在最上方 order-1，電腦版移至右側 order-2) -->
-              <div class="flex items-center justify-between md:justify-end gap-1.5 shrink-0 order-1 md:order-2 pb-1.5 md:pb-0 border-b md:border-b-0 border-slate-200/70">
-                <!-- 手機版左側放置勾選框，方便單手與狀態列同排操作 -->
-                <div class="flex items-center gap-2 md:hidden">
-                  <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
-                  <span class="text-[11px] font-bold text-slate-400">選取</span>
-                </div>
-
-                <div class="flex items-center gap-1.5 flex-wrap justify-end">
-                  <!-- 倉管一鍵「帳實相符」快速初盤按鈕 -->
-                  ${(!isWarehouseDone && canEditWarehouse) ? `
-                    <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="inline-flex items-center whitespace-nowrap px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
-                      <i class="fa-solid fa-check-double mr-1"></i>帳實相符
-                    </button>
-                  ` : ''}
-
-                  <!-- 倉管初盤狀態 -->
-                  <span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/90 border border-slate-200 text-slate-500'}">
-                    ${isWarehouseDone ? '<i class="fa-solid fa-check mr-1"></i>已初盤' : '待初盤'}
-                  </span>
-
-                  <!-- 品管檢查狀態 -->
-                  ${isAudited 
-                    ? `<span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
-                        <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-1"></i>${isAbnormal ? '異常' : '正常'}
-                       </span>` 
-                    : `<span class="inline-flex items-center whitespace-nowrap px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/90 border border-slate-200 text-slate-500">待檢查</span>`}
-
-                  <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold shrink-0" title="${isExpanded ? '收合' : '展開'}">
-                    <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
-                  </button>
-                  ${currentRole === 'admin' ? `
-                    <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs shrink-0" title="刪除品項">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  ` : ''}
-                </div>
-              </div>
-
-              <!-- 左側主資訊區 (手機版在下方 order-2 享 100% 寬度；電腦版在左側 order-1) -->
-              <div class="flex items-start md:items-center gap-2.5 flex-1 min-w-0 order-2 md:order-1">
-                <!-- 電腦版勾選框 -->
-                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="hidden md:block w-4 h-4 text-indigo-600 rounded shrink-0">
-                
-                <div class="flex-1 min-w-0 flex flex-col md:flex-row md:items-center md:justify-between gap-1.5 md:gap-3">
+            <!-- 卡片頂部標頭 (標籤列獨立阻斷點擊展開，點擊品名或右側箭頭才會展開卡片) -->
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2 flex-1 min-w-0">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
+                <div class="flex-1 min-w-0">
                   
-                  <!-- 品名標題列：手機版獨佔第一行並放大字級 (16px 粗體) 一眼辨識；電腦版固定適中寬度緊湊對齊 -->
-                  <div onclick="toggleCardExpand('${item.id}')" class="cursor-pointer group/title md:w-52 lg:w-64 shrink-0">
-                    <h2 class="font-bold text-base md:text-sm text-slate-900 leading-snug md:truncate group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
-                  </div>
-
-                  <!-- 標籤資訊列：手機版精簡顯示核心欄位(料號/批號/儲位/狀態警示)，輔助資訊(公司/類別/效期)收合時在手機版隱藏以維持清爽，展開或電腦版完整顯示 -->
-                  <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap flex-1 min-w-0 cursor-default select-none">
+                  <!-- 標籤資訊列 (點擊此區不會誤觸展開卡片) -->
+                  <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap cursor-default select-none">
                     
                     ${item.company ? `
-                      <div class="relative group ${isExpanded ? 'inline-block' : 'hidden md:inline-block'} shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           所屬公司
                         </div>
                       </div>
                     ` : ''}
 
-                    <div class="relative group inline-block shrink-0">
-                      <span class="inline-flex items-center whitespace-nowrap font-mono text-xs font-bold text-slate-700 bg-white/95 border border-slate-200 px-1.5 py-0.5 rounded">${escapeHtml(item.sku || '無編號')}</span>
+                    <div class="relative group inline-block">
+                      <span class="font-mono text-xs font-bold text-slate-700 bg-white/90 border border-slate-200 px-1.5 py-0.5 rounded">${escapeHtml(item.sku || '無編號')}</span>
                       <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                         產品編號
                       </div>
                     </div>
 
-                    ${getCategoryBadgeHtml(item.category, isExpanded ? '' : 'hidden md:inline-block')}
+                    ${getCategoryBadgeHtml(item.category)}
 
                     ${hasLooseInfo ? `
-                      <div class="relative group inline-block shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${escapeHtml(item.location || '未指定')}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>完整: ${escapeHtml(item.location || '未指定')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
                       </div>
-                      <div class="relative group inline-block shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${escapeHtml(item.looseLocation || '未指定')}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-teal-50 text-teal-700 border border-teal-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-box-open mr-1"></i>散貨: ${escapeHtml(item.looseLocation || '未指定')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           散貨儲存地點
                         </div>
                       </div>
                     ` : `
-                      <div class="relative group inline-block shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(item.location || '未指定地點')}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-indigo-50 text-indigo-700 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold"><i class="fa-solid fa-location-dot mr-1"></i>${escapeHtml(item.location || '未指定地點')}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           完整貨儲存地點
                         </div>
@@ -2021,8 +2049,8 @@
                     `}
 
                     ${item.batchNo ? `
-                      <div class="relative group inline-block shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${escapeHtml(item.batchNo)}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs bg-amber-50 text-amber-800 border border-amber-200 px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-solid fa-barcode mr-1"></i>${escapeHtml(item.batchNo)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           產品批號
                         </div>
@@ -2030,65 +2058,104 @@
                     ` : ''}
 
                     ${normalizedExp ? `
-                      <div class="relative group ${isExpanded || isExpired || isExpiringSoon ? 'inline-block' : 'hidden md:inline-block'} shrink-0">
-                        <span class="inline-flex items-center whitespace-nowrap text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-regular fa-calendar-check mr-1"></i>${escapeHtml(normalizedExp)}</span>
+                      <div class="relative group inline-block">
+                        <span class="text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold"><i class="fa-regular fa-calendar-check mr-1"></i>${escapeHtml(normalizedExp)}</span>
                         <div class="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block bg-slate-800 text-white text-[10px] py-1 px-2 rounded shadow-lg whitespace-nowrap z-10 pointer-events-none">
                           ${expTooltip}
                         </div>
                       </div>
                     ` : ''}
 
-                    ${isExpiringSoon ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold shrink-0">即期品 (${expInfo.daysLeft}天)</span>` : ''}
-                    ${isExpired ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold shrink-0">已過期</span>` : ''}
-                    ${item.lockedByBuyer ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold shrink-0"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
-                    ${hasDiscrepancy ? `<span class="inline-flex items-center whitespace-nowrap text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold shrink-0">盤差: ${diff}</span>` : ''}
+                    ${isExpiringSoon ? `<span class="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold">即期品 (${expInfo.daysLeft}天)</span>` : ''}
+                    ${isExpired ? `<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold">已過期</span>` : ''}
+                    ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold">盤差: ${diff}</span>` : ''}
+                  </div>
+
+                  <!-- 品名標題列：點擊可展開 / 收合卡片 -->
+                  <div onclick="toggleCardExpand('${item.id}')" class="cursor-pointer pt-1 group/title">
+                    <h2 class="font-bold text-sm text-slate-800 truncate group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
                   </div>
                 </div>
+              </div>
+
+              <!-- 右側階段狀態標籤與快速操作群組 -->
+              <div class="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                <!-- 倉管一鍵「帳實相符」快速初盤按鈕 -->
+                ${(!isWarehouseDone && canEditWarehouse) ? `
+                  <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
+                    <i class="fa-solid fa-check-double mr-0.5"></i>帳實相符
+                  </button>
+                ` : ''}
+
+                <!-- 倉管初盤狀態 -->
+                <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/80 border border-slate-200 text-slate-500'}">
+                  ${isWarehouseDone ? '<i class="fa-solid fa-check mr-0.5"></i>已初盤' : '待初盤'}
+                </span>
+
+                <!-- 品管檢查狀態 -->
+                ${isAudited 
+                  ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
+                      <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-0.5"></i>${isAbnormal ? '異常' : '正常'}
+                     </span>` 
+                  : `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-white/80 border border-slate-200 text-slate-500">待檢查</span>`}
+
+                <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold" title="${isExpanded ? '收合' : '展開'}">
+                  <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
+                </button>
+                ${currentRole === 'admin' ? `
+                  <button onclick="openLabelStudioWithItem('${item.id}')" class="text-purple-600 hover:text-purple-800 hover:bg-purple-100/70 p-1 rounded text-xs" title="列印 10×10cm QR 標籤 (管理員專用)">
+                    <i class="fa-solid fa-qrcode"></i>
+                  </button>
+                  <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs" title="刪除品項">
+                    <i class="fa-solid fa-trash-can"></i>
+                  </button>
+                ` : ''}
               </div>
             </div>
 
             ${isExpanded ? `
-              <div class="pt-3 mt-2.5 border-t border-slate-200/80 space-y-3 bg-white/95 rounded-lg p-3">
+              <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/90 rounded-lg p-2.5">
                 
-                <!-- 倉管雙儲存地點下拉選單 (電腦版並排、手機版全寬) -->
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                <!-- 倉管雙儲存地點下拉選單 -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-1">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">
                       <i class="fa-solid fa-warehouse text-emerald-600 mr-1"></i>完整貨儲存地點 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：
                     </label>
-                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
+                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'location', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-indigo-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
                       ${renderLocationOptions(item.location, '-- 請選擇完整貨地點 --')}
                     </select>
                   </div>
                   <div>
-                    <label class="block text-[11px] font-bold text-slate-500 mb-1">
+                    <label class="block text-[11px] font-bold text-slate-500 mb-0.5">
                       <i class="fa-solid fa-box-open text-teal-600 mr-1"></i>散貨儲存地點 ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：
                     </label>
-                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'looseLocation', this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
+                    <select ${!canEditWarehouse ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'looseLocation', this.value)" class="w-full border border-slate-300 rounded px-2 py-1.5 text-xs font-semibold bg-white text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none disabled:bg-slate-100 disabled:text-slate-600">
                       ${renderLocationOptions(item.looseLocation, '-- 無散貨 / 未指定 --')}
                     </select>
                   </div>
                 </div>
 
-                <!-- 倉管與品管檢視：手機版上方標籤已顯示批號與效期，避免重複占版面僅於電腦版顯示唯讀明細框 -->
+                <!-- 倉管與品管檢視：產品批號與有效日期為唯讀資訊 -->
                 ${(currentRole !== 'buyer' && currentRole !== 'admin') ? `
-                  <div class="hidden md:grid md:grid-cols-2 gap-2.5">
+                  <div class="grid grid-cols-2 gap-2">
                     <div>
                       <label class="block text-[11px] font-bold text-slate-500 mb-0.5">產品批號 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
-                      <div class="w-full border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs font-mono bg-slate-100 text-slate-700">${escapeHtml(item.batchNo || '未填寫')}</div>
+                      <div class="w-full border border-slate-200 rounded px-2 py-1.5 text-xs font-mono bg-slate-100 text-slate-700">${escapeHtml(item.batchNo || '未填寫')}</div>
                     </div>
                     <div>
                       <label class="block text-[11px] font-bold text-slate-500 mb-0.5">有效日期 <span class="text-[10px] text-slate-400 font-normal">(採購填寫/唯讀)</span>：</label>
-                      <div class="w-full border ${isExpired ? 'border-rose-300 bg-rose-50 text-rose-700 font-bold' : isExpiringSoon ? 'border-orange-300 bg-orange-50 text-orange-700 font-bold' : 'border-slate-200 bg-slate-100 text-slate-700'} rounded-lg px-2.5 py-1.5 text-xs font-mono">${escapeHtml(normalizedExp || '未填寫')}</div>
+                      <div class="w-full border ${isExpired ? 'border-rose-300 bg-rose-50 text-rose-700 font-bold' : isExpiringSoon ? 'border-orange-300 bg-orange-50 text-orange-700 font-bold' : 'border-slate-200 bg-slate-100 text-slate-700'} rounded px-2 py-1.5 text-xs font-mono">${escapeHtml(normalizedExp || '未填寫')}</div>
                     </div>
                   </div>
                   ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
                   ${isExpiringSoon ? `<div class="text-[11px] text-orange-600 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> 即期品提醒：距離有效日期僅剩 ${expInfo.daysLeft} 天！</div>` : ''}
                 ` : ''}
 
-                <!-- 數量顯示與倉管初盤輸入區 (電腦版多欄並排，手機版 2 欄好輸入) -->
-                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2.5">
-                  <div class="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-200/70">
+                <!-- 數量顯示與倉管初盤輸入區 -->
+                <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80 text-xs space-y-2">
+                  <div class="flex flex-wrap items-center justify-between gap-2 pb-1.5 border-b border-slate-200/70">
                     <div>
                       <span class="text-slate-500">帳面數量：</span>
                       <span class="font-bold text-slate-700">${item.systemQty} ${escapeHtml(item.unit)}</span>
@@ -2103,36 +2170,36 @@
                       ${isOfficialAdjusted ? `<span class="text-[10px] bg-amber-100 text-amber-800 px-1.5 py-0.2 rounded font-bold ml-1">採購修訂</span>` : ''}
                     </div>
                   </div>
-                  <div class="grid grid-cols-2 md:grid-cols-4 gap-2.5 items-end">
+                  <div class="grid grid-cols-2 gap-2">
                     <div>
-                      <label class="block text-[11px] font-bold text-slate-600 mb-1">完整貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                      <input type="number" step="any" id="intactInput_${item.id}" value="${intactQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'intact', this.value)" class="w-full border border-slate-300 bg-white rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-600">
+                      <label class="block text-[11px] font-bold text-slate-600 mb-0.5">完整貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
+                      <input type="number" step="any" id="intactInput_${item.id}" value="${intactQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'intact', this.value)" class="w-full border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold text-slate-800 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-slate-100 disabled:text-slate-600">
                     </div>
                     <div>
-                      <label class="block text-[11px] font-bold text-teal-700 mb-1">散貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
-                      <input type="number" step="any" id="looseInput_${item.id}" value="${looseQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'loose', this.value)" class="w-full border border-teal-300 bg-white rounded-lg px-2.5 py-1.5 text-xs font-bold text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100 disabled:text-slate-600">
+                      <label class="block text-[11px] font-bold text-teal-700 mb-0.5">散貨數量 (${escapeHtml(item.unit)}) ${!canEditWarehouse ? '<span class="text-[10px] text-slate-400 font-normal">(唯讀)</span>' : ''}：</label>
+                      <input type="number" step="any" id="looseInput_${item.id}" value="${looseQty}" ${!canEditWarehouse ? 'disabled' : ''} onchange="updateQuantities('${item.id}', 'loose', this.value)" class="w-full border border-teal-300 bg-white rounded px-2 py-1 text-xs font-bold text-teal-900 focus:outline-none focus:ring-1 focus:ring-teal-500 disabled:bg-slate-100 disabled:text-slate-600">
                     </div>
-
-                    ${(currentRole === 'warehouse' || currentRole === 'admin') ? `
-                      <div class="col-span-2 flex flex-wrap items-center justify-between md:justify-end gap-2 pt-1.5 md:pt-0 border-t md:border-t-0 border-slate-200/70">
-                        <div class="text-[11px] text-slate-500">
-                          ${isWarehouseDone 
-                            ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${escapeHtml(item.warehouseAuditor || '')})</span>` 
-                            : `<span class="md:hidden">確認儲位與數量後儲存：</span>`}
-                        </div>
-                        <div class="flex gap-1.5">
-                          <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
-                            <i class="fa-solid fa-floppy-disk mr-1"></i>${isWarehouseDone ? '更新初盤紀錄' : '儲存初盤紀錄'}
-                          </button>
-                          ${isWarehouseDone && canEditWarehouse ? `
-                            <button onclick="resetWarehouseCheck('${item.id}')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
-                              重置
-                            </button>
-                          ` : ''}
-                        </div>
-                      </div>
-                    ` : ''}
                   </div>
+
+                  ${(currentRole === 'warehouse' || currentRole === 'admin') ? `
+                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
+                      <div class="text-[11px] text-slate-500">
+                        ${isWarehouseDone 
+                          ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${escapeHtml(item.warehouseAuditor || '')} ${escapeHtml(item.warehouseTime || '')})</span>` 
+                          : `<span>確認儲位與初盤數量後請點擊儲存：</span>`}
+                      </div>
+                      <div class="flex gap-1.5">
+                        <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
+                          <i class="fa-solid fa-floppy-disk mr-1"></i>${isWarehouseDone ? '更新初盤紀錄' : '儲存初盤紀錄'}
+                        </button>
+                        ${isWarehouseDone && canEditWarehouse ? `
+                          <button onclick="resetWarehouseCheck('${item.id}')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-slate-200 text-slate-700 hover:bg-slate-300 transition">
+                            重置
+                          </button>
+                        ` : ''}
+                      </div>
+                    </div>
+                  ` : ''}
                 </div>
 
                 <!-- 採購覆核與盤點鎖定區塊 -->
@@ -2148,14 +2215,14 @@
                       </button>
                     </div>
 
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <div>
                         <label class="block text-[11px] font-bold text-amber-900 mb-0.5">產品批號：</label>
-                        <input type="text" value="${escapeHtml(item.batchNo || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs font-mono bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="text" value="${escapeHtml(item.batchNo || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="請輸入批號..." onblur="updateItemField('${item.id}', 'batchNo', this.value)" class="w-full border border-amber-300 rounded px-2 py-1 text-xs font-mono bg-white focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                       <div>
                         <label class="block text-[11px] font-bold text-amber-900 mb-0.5">有效日期：</label>
-                        <input type="date" value="${escapeHtml(normalizedExp)}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : isExpiringSoon ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-amber-300 bg-white'} rounded-lg px-2.5 py-1.5 text-xs font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="date" value="${escapeHtml(normalizedExp)}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateItemField('${item.id}', 'expDate', this.value)" class="w-full border ${isExpired ? 'border-rose-400 bg-rose-50 text-rose-700' : isExpiringSoon ? 'border-orange-400 bg-orange-50 text-orange-700' : 'border-amber-300 bg-white'} rounded px-2 py-1 text-xs font-medium focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                       <div>
                         <div class="flex items-center justify-between mb-0.5">
@@ -2164,16 +2231,17 @@
                             <button onclick="resetOfficialActualQty('${item.id}')" class="text-[10px] text-amber-700 underline hover:text-amber-950" title="恢復帶入倉管初盤總數">帶入初盤</button>
                           ` : ''}
                         </div>
-                        <input type="number" step="any" value="${finalActual}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateOfficialActualQty('${item.id}', this.value)" class="w-full border border-amber-400 bg-white rounded-lg px-2.5 py-1.5 text-xs font-black text-amber-950 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
-                      </div>
-                      <div>
-                        <label class="block text-[11px] font-bold text-amber-900 mb-0.5">採購覆核說明：</label>
-                        <input type="text" value="${escapeHtml(item.buyerNote || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="差異原因、退貨或補發說明..." onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded-lg px-2.5 py-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-amber-100/60 disabled:text-slate-500">
+                        <input type="number" step="any" value="${finalActual}" ${!canEditBuyer ? 'disabled' : ''} onchange="updateOfficialActualQty('${item.id}', this.value)" class="w-full border border-amber-400 bg-white rounded px-2 py-1 text-xs font-black text-amber-950 focus:ring-1 focus:ring-amber-500 focus:outline-none disabled:bg-amber-100/60 disabled:text-slate-500">
                       </div>
                     </div>
 
                     ${isExpired ? `<div class="text-[11px] text-rose-600 font-bold flex items-center gap-1"><i class="fa-solid fa-circle-exclamation"></i> 警告：該有效日期已過期！</div>` : ''}
                     ${isExpiringSoon ? `<div class="text-[11px] text-orange-600 font-bold flex items-center gap-1"><i class="fa-solid fa-clock"></i> 即期品提醒：距離有效日期僅剩 ${expInfo.daysLeft} 天！</div>` : ''}
+
+                    <div>
+                      <label class="block text-[11px] font-bold text-amber-900 mb-0.5">採購覆核說明：</label>
+                      <input type="text" value="${escapeHtml(item.buyerNote || '')}" ${!canEditBuyer ? 'disabled' : ''} placeholder="採購對接說明 (如: 正式盤點差異原因、安排退貨、通知廠商補發...)" onblur="updateItemField('${item.id}', 'buyerNote', this.value)" class="w-full border border-amber-300 rounded p-1.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-amber-500 disabled:bg-amber-100/60 disabled:text-slate-500">
+                    </div>
                   </div>
                 ` : ((item.buyerNote || isOfficialAdjusted) ? `
                   <div class="text-xs bg-amber-50 border border-amber-200 p-2 rounded-lg text-amber-900 space-y-1">
@@ -2182,99 +2250,95 @@
                   </div>
                 ` : '')}
 
-                <!-- 品管現檢核取與判定區 (電腦版分為左右雙欄提升判讀與操作效率) -->
+                <!-- 品管現檢核取與判定區 -->
                 ${(currentRole === 'qc' || currentRole === 'admin') ? `
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
-                      <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
-                        <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
-                      </div>
-                      
-                      <div class="flex items-center justify-between">
-                        <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
-                        <div class="flex gap-1">
-                          <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                          <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
-                        </div>
-                      </div>
-
-                      <div class="flex items-center justify-between">
-                        <span class="text-slate-600 font-medium">2. 是否有散貨 <span class="text-[10px] text-teal-600">(隨散貨數量連動)</span>：</span>
-                        <div class="flex gap-1">
-                          <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                          <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
-                        </div>
-                      </div>
-
-                      <div class="flex items-center justify-between">
-                        <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
-                        <div class="flex gap-1 shrink-0">
-                          <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
-                          <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
-                        </div>
+                  <div class="bg-slate-50 p-2.5 rounded-lg border border-slate-200 text-xs space-y-2">
+                    <div class="font-bold text-slate-700 flex items-center gap-1 mb-1">
+                      <i class="fa-solid fa-clipboard-check text-indigo-600"></i> 品管現檢核取欄位：
+                    </div>
+                    
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">1. 包裝是否完好：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'pkgIntact', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.pkgIntact === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
                       </div>
                     </div>
 
-                    <div class="space-y-2.5">
-                      <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
-                        <div class="grid grid-cols-2 gap-2">
-                          <button onclick="updateCondition('${item.id}', 'normal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
-                            <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
-                          </button>
-                          <button onclick="updateCondition('${item.id}', 'abnormal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
-                            <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
-                          </button>
-                        </div>
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">2. 是否有散貨 <span class="text-[10px] text-teal-600">(隨散貨數量連動)</span>：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '是' ? 'bg-amber-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'hasLooseStock', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.hasLooseStock === '否' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
                       </div>
+                    </div>
 
-                      ${item.condition === 'abnormal' ? `
-                        <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
-                          <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
-                          <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" ${isQcLocked ? 'disabled' : ''} class="w-full text-xs border border-rose-300 rounded-lg p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
-                            <option value="">-- 請選擇處置方式 --</option>
-                            <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
-                            <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
-                            <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
-                            <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
-                          </select>
-                        </div>
-                      ` : ''}
-
-                      <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
-                        <input type="text" value="${escapeHtml(item.note || '')}" ${isQcLocked ? 'disabled' : ''} placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
-                        ${item.condition === 'abnormal' && !isQcLocked ? `
-                          <div class="flex flex-wrap gap-1 mt-1">
-                            <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
-                            <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
-                            <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
-                          </div>
-                        ` : ''}
+                    <div class="flex items-center justify-between">
+                      <span class="text-slate-600 font-medium">3. 品質(包裝樣式/顏色/風味/流動性)正常：</span>
+                      <div class="flex gap-1">
+                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '是')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '是' ? 'bg-emerald-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">是</button>
+                        <button onclick="updateItemField('${item.id}', 'qualityCheck', '否')" ${isQcLocked ? 'disabled' : ''} class="px-3 py-1 rounded text-[11px] font-bold ${item.qualityCheck === '否' ? 'bg-rose-600 text-white shadow-sm' : 'bg-white border text-slate-600 hover:bg-slate-100'}">否</button>
                       </div>
+                    </div>
+                  </div>
 
-                      <div>
-                        <label class="block text-xs font-bold text-slate-600 mb-1">
-                          <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">整體品質性狀判定：</label>
+                    <div class="grid grid-cols-2 gap-2">
+                      <button onclick="updateCondition('${item.id}', 'normal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'normal' ? 'bg-emerald-600 text-white border-emerald-600' : 'bg-white text-slate-700 border-slate-300'}">
+                        <i class="fa-solid fa-circle-check"></i> 正常 (PASS)
+                      </button>
+                      <button onclick="updateCondition('${item.id}', 'abnormal')" ${isQcLocked ? 'disabled' : ''} class="py-1.5 rounded-lg border text-xs font-bold flex items-center justify-center gap-1.5 ${item.condition === 'abnormal' ? 'bg-rose-600 text-white border-rose-600' : 'bg-white text-slate-700 border-slate-300'}">
+                        <i class="fa-solid fa-triangle-exclamation"></i> 異常 (FAIL)
+                      </button>
+                    </div>
+                  </div>
+
+                  ${item.condition === 'abnormal' ? `
+                    <div class="bg-rose-50 border border-rose-200 p-2.5 rounded-lg">
+                      <label class="block text-xs font-bold text-rose-800 mb-1"><i class="fa-solid fa-wrench mr-1"></i>異常處置方式 (必選)：</label>
+                      <select onchange="updateItemField('${item.id}', 'abnormalAction', this.value)" ${isQcLocked ? 'disabled' : ''} class="w-full text-xs border border-rose-300 rounded p-1.5 bg-white text-rose-900 font-semibold focus:outline-none">
+                        <option value="">-- 請選擇處置方式 --</option>
+                        <option value="報廢" ${item.abnormalAction === '報廢' ? 'selected' : ''}>【報廢】進行報廢程序</option>
+                        <option value="待複檢" ${item.abnormalAction === '待複檢' ? 'selected' : ''}>【待複檢】隔離並通知品管複驗</option>
+                        <option value="隔離" ${item.abnormalAction === '隔離' ? 'selected' : ''}>【隔離】移至不良品區</option>
+                        <option value="其他處置" ${item.abnormalAction === '其他處置' ? 'selected' : ''}>【其他處置】於備註說明</option>
+                      </select>
+                    </div>
+                  ` : ''}
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1"><i class="fa-solid fa-comment-dots text-indigo-600 mr-1"></i>盤點備註欄位：</label>
+                    <input type="text" value="${escapeHtml(item.note || '')}" ${isQcLocked ? 'disabled' : ''} placeholder="填寫備註或異常原因描述..." onblur="updateItemField('${item.id}', 'note', this.value)" class="w-full text-xs border border-slate-300 rounded-lg p-1.5 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    ${item.condition === 'abnormal' && !isQcLocked ? `
+                      <div class="flex flex-wrap gap-1 mt-1">
+                        <button onclick="addNoteChip('${item.id}', '包裝破損滲漏')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 包裝破損</button>
+                        <button onclick="addNoteChip('${item.id}', '超過保存期限')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 超過有效期限</button>
+                        <button onclick="addNoteChip('${item.id}', '受潮結塊變質')" class="text-[10px] bg-rose-100 text-rose-700 px-1.5 py-0.5 rounded hover:bg-rose-200">+ 受潮變質</button>
+                      </div>
+                    ` : ''}
+                  </div>
+
+                  <div>
+                    <label class="block text-xs font-bold text-slate-600 mb-1">
+                      <i class="fa-solid fa-camera text-indigo-600 mr-1"></i>包裝/標籤照片 (選填)：
+                    </label>
+                    <div class="flex items-center gap-2">
+                      ${!isQcLocked ? `
+                        <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
+                          <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
+                          <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
                         </label>
-                        <div class="flex items-center gap-2">
-                          ${!isQcLocked ? `
-                            <label class="cursor-pointer bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg px-3 py-1.5 text-xs font-semibold flex items-center gap-1">
-                              <i class="fa-solid fa-cloud-arrow-up"></i> 拍照 / 上傳
-                              <input type="file" accept="image/*" capture="environment" onchange="handlePhotoUpload('${item.id}', event)" class="hidden">
-                            </label>
-                          ` : ''}
-                          ${item.photo ? `
-                            <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
-                              <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
-                              <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
-                            </div>
-                            <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
-                          ` : `
-                            <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
-                          `}
+                      ` : ''}
+                      ${item.photo ? `
+                        <div class="relative group cursor-pointer" onclick="openImageViewer('${item.photo}')" title="點擊放大觀看照片">
+                          <img src="${item.photo}" class="w-10 h-10 object-cover rounded-lg border border-indigo-200 shadow-sm">
+                          <div class="absolute inset-0 bg-black/40 rounded-lg flex items-center justify-center opacity-0 group-hover:opacity-100 transition text-white text-[10px]">放大</div>
                         </div>
-                      </div>
+                        <span class="text-[11px] text-emerald-600 font-semibold"><i class="fa-solid fa-check"></i> 已上傳</span>
+                      ` : `
+                        <span class="text-[11px] text-slate-400 font-medium">尚未上傳 (選填)</span>
+                      `}
                     </div>
                   </div>
 
@@ -2904,12 +2968,38 @@
       `;
     }
 
-    // 相機條碼掃描器控制
+    // 解析掃描結果：支援舊式 1D 單一料號條碼，以及新式 2D QR Code（產品編號|產品批號|有效日期|所屬公司）
+    function parseScannedPayload(rawText) {
+      const text = (rawText || '').trim();
+      if (!text) return null;
+
+      if (text.includes('|')) {
+        const parts = text.split('|').map(s => s.trim());
+        return {
+          isStructuredQr: true,
+          raw: text,
+          sku: parts[0] || '',
+          batchNo: parts[1] || '',
+          expDate: normalizeDateString(parts[2] || '') || (parts[2] || ''),
+          company: parts[3] || ''
+        };
+      }
+      return {
+        isStructuredQr: false,
+        raw: text,
+        sku: text,
+        batchNo: '',
+        expDate: '',
+        company: ''
+      };
+    }
+
+    // 相機雙模條碼掃描器控制 (同時支援 1D Barcode 與 2D QR Code)
     function openBarcodeScanner(target) {
       currentScanTarget = target || 'search';
       document.getElementById('barcodeScannerModal').classList.remove('hidden');
       const statusEl = document.getElementById('scannerStatusText');
-      statusEl.innerText = '正在啟動相機鏡頭...';
+      statusEl.innerText = '正在啟動雙模相機鏡頭 (支援 1D 條碼與 2D QR Code)...';
 
       if (typeof Html5Qrcode === 'undefined') {
         statusEl.innerText = '掃碼套件載入失敗，請檢查網路連線。';
@@ -2920,29 +3010,385 @@
         try { html5QrScanner.clear(); } catch (e) {}
       }
 
-      html5QrScanner = new Html5Qrcode('qrReader');
+      // 明確啟用所有常見 1D 一維條碼與 2D QR Code 格式
+      const supportedFormats = typeof Html5QrcodeSupportedFormats !== 'undefined' ? [
+        Html5QrcodeSupportedFormats.QR_CODE,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.CODE_93,
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.ITF,
+        Html5QrcodeSupportedFormats.CODABAR,
+        Html5QrcodeSupportedFormats.DATA_MATRIX
+      ] : undefined;
+
+      html5QrScanner = supportedFormats
+        ? new Html5Qrcode('qrReader', { formatsToSupport: supportedFormats, verbose: false })
+        : new Html5Qrcode('qrReader');
+
       html5QrScanner.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 240, height: 140 } },
+        {
+          fps: 12,
+          qrbox: { width: 230, height: 230 },
+          aspectRatio: 1.0
+        },
         (decodedText) => {
-          const code = (decodedText || '').trim();
-          if (code) {
-            closeBarcodeScanner();
-            if (currentScanTarget === 'addSku') {
-              document.getElementById('newItemSku').value = code;
+          const parsed = parseScannedPayload(decodedText);
+          if (!parsed) return;
+          closeBarcodeScanner();
+
+          if (currentScanTarget === 'addSku' || currentScanTarget === 'addFullQr') {
+            document.getElementById('newItemSku').value = parsed.sku;
+            if (parsed.isStructuredQr) {
+              if (parsed.batchNo) document.getElementById('newItemBatch').value = parsed.batchNo;
+              if (parsed.expDate) document.getElementById('newItemExp').value = parsed.expDate;
+              if (parsed.company) document.getElementById('newItemCompany').value = parsed.company;
+              const matchedMaster = inventoryData.find(i => (i.sku || '').trim() === parsed.sku);
+              if (matchedMaster && !document.getElementById('newItemName').value) {
+                document.getElementById('newItemName').value = matchedMaster.name || '';
+                if (matchedMaster.category) document.getElementById('newItemCategory').value = matchedMaster.category;
+                if (matchedMaster.unit) document.getElementById('newItemUnit').value = matchedMaster.unit;
+              }
+            }
+          } else {
+            // 主畫面雙模掃碼定位
+            if (parsed.isStructuredQr) {
+              const compSelect = document.getElementById('companyFilter');
+              if (parsed.company && compSelect) {
+                const hasCompOption = Array.from(compSelect.options).some(opt => opt.value === parsed.company);
+                compSelect.value = hasCompOption ? parsed.company : 'all';
+              }
+              const searchKey = parsed.batchNo || parsed.sku;
+              document.getElementById('searchInput').value = searchKey;
+              handleFilterChange();
+
+              // 若精準命中單筆品項，自動展開該卡片方便立即盤點
+              const exactMatches = inventoryData.filter(item =>
+                (!parsed.sku || (item.sku || '').trim() === parsed.sku) &&
+                (!parsed.batchNo || (item.batchNo || '').trim() === parsed.batchNo) &&
+                (!parsed.company || (item.company || '').trim() === parsed.company)
+              );
+              if (exactMatches.length === 1) {
+                expandedItemIds.add(exactMatches[0].id);
+                renderItemList();
+                fetchItemAuditLogs(exactMatches[0].id);
+              }
             } else {
-              document.getElementById('searchInput').value = code;
+              document.getElementById('searchInput').value = parsed.sku;
               handleFilterChange();
             }
           }
         },
         () => {}
       ).then(() => {
-        statusEl.innerText = '請將條碼或 QR Code 對準鏡頭框內...';
+        statusEl.innerText = '請將 1D 條碼或正方形 QR Code 對準鏡頭框內...';
       }).catch((err) => {
         console.error('相機開啟失敗:', err);
         statusEl.innerText = '無法開啟相機（請確認瀏覽器已允許相機權限，或改用 HTTPS 連線）。';
       });
+    }
+
+    // =========================================================================
+    // 管理員專用：10×10 cm 正方形 QR Code 出貨標籤產生與列印模組
+    // =========================================================================
+    let labelPrintQueue = [];
+
+    function isCurrentUserVerifiedAdmin() {
+      const activePerson = personnelList.find(p => p.name === selectedAuditor);
+      return currentRole === 'admin' && activePerson && activePerson.role === 'admin' && isAdminVerified;
+    }
+
+    function openLabelStudioModal() {
+      if (!isCurrentUserVerifiedAdmin()) {
+        alert('權限不足！只有通過管理員密碼驗證的「管理員」才能使用出貨標籤產生與列印系統。');
+        return;
+      }
+      populateLabelInventorySelect();
+      if (!document.getElementById('lblSku').value && !document.getElementById('lblName').value) {
+        loadSampleLabelPreset();
+      } else {
+        renderLabelPreview();
+      }
+      renderLabelQueueUI();
+      document.getElementById('labelStudioModal').classList.remove('hidden');
+    }
+
+    function openLabelStudioWithItem(itemId) {
+      if (!isCurrentUserVerifiedAdmin()) {
+        alert('權限不足！只有管理員可使用此功能。');
+        return;
+      }
+      populateLabelInventorySelect();
+      const sel = document.getElementById('labelInventorySelect');
+      if (sel) sel.value = itemId;
+      handleLabelInventorySelect(itemId);
+      renderLabelQueueUI();
+      document.getElementById('labelStudioModal').classList.remove('hidden');
+    }
+
+    function closeLabelStudioModal() {
+      document.getElementById('labelStudioModal').classList.add('hidden');
+    }
+
+    function populateLabelInventorySelect() {
+      const sel = document.getElementById('labelInventorySelect');
+      if (!sel) return;
+      sel.innerHTML = `<option value="">-- 選擇現有庫存品項自動帶入 (共 ${inventoryData.length} 筆) --</option>` +
+        inventoryData.map(item => {
+          const label = `[${item.sku || '無編號'}] ${item.name || ''} ${item.batchNo ? '(批:' + item.batchNo + ')' : ''} ${item.company ? '[' + item.company + ']' : ''}`;
+          return `<option value="${escapeHtml(item.id)}">${escapeHtml(label)}</option>`;
+        }).join('');
+    }
+
+    function handleLabelInventorySelect(itemId) {
+      const item = inventoryData.find(i => i.id === itemId);
+      if (!item) return;
+
+      document.getElementById('lblSku').value = item.sku || '';
+      document.getElementById('lblName').value = item.name || '';
+      document.getElementById('lblIngredient').value = item.name || '';
+      document.getElementById('lblBatch').value = item.batchNo || '';
+      document.getElementById('lblExpDate').value = normalizeDateString(item.expDate) || item.expDate || '';
+      document.getElementById('lblCompany').value = item.company || '佳津';
+      document.getElementById('lblWeight').value = item.unit ? `25${item.unit}` : '25公斤';
+
+      if ((item.company || '').includes('佳津') || !item.company) {
+        document.getElementById('lblDistributor').value = '佳津貿易股份有限公司';
+        document.getElementById('lblAddress').value = '臺北市南港區八德路四段778號4樓';
+        document.getElementById('lblPhone').value = '(02)2788-6279';
+      }
+      renderLabelPreview();
+    }
+
+    function loadSampleLabelPreset() {
+      document.getElementById('lblSku').value = '0099008';
+      document.getElementById('lblName').value = '紅藜麥';
+      document.getElementById('lblIngredient').value = '紅藜麥';
+      document.getElementById('lblWeight').value = '25公斤';
+      document.getElementById('lblBatch').value = '3685-260126QR';
+      document.getElementById('lblMfgDate').value = '2026.01.26';
+      document.getElementById('lblExpDate').value = '2029-01-26';
+      document.getElementById('lblCompany').value = '佳津';
+      document.getElementById('lblManufacturer').value = 'COLOREXA SOCIEDAD ANONIMA CERRADA';
+      document.getElementById('lblDistributor').value = '佳津貿易股份有限公司';
+      document.getElementById('lblAddress').value = '臺北市南港區八德路四段778號4樓';
+      document.getElementById('lblPhone').value = '(02)2788-6279';
+      document.getElementById('lblOrigin').value = '秘魯';
+      document.getElementById('lblRemark').value = '非供即食，烹煮條件依加工廠條件而訂';
+      renderLabelPreview();
+    }
+
+    function getCurrentLabelFormData() {
+      const sku = (document.getElementById('lblSku')?.value || '').trim();
+      const batchNo = (document.getElementById('lblBatch')?.value || '').trim();
+      const rawExp = (document.getElementById('lblExpDate')?.value || '').trim();
+      const expNorm = normalizeDateString(rawExp) || rawExp;
+      const company = (document.getElementById('lblCompany')?.value || '').trim();
+
+      // 結構化 QR Code 編碼：產品編號|產品批號|有效日期|所屬公司
+      const qrPayload = `${sku}|${batchNo}|${expNorm}|${company}`;
+
+      return {
+        sku,
+        name: (document.getElementById('lblName')?.value || '').trim(),
+        ingredient: (document.getElementById('lblIngredient')?.value || '').trim(),
+        weight: (document.getElementById('lblWeight')?.value || '').trim(),
+        batchNo,
+        mfgDate: (document.getElementById('lblMfgDate')?.value || '').trim(),
+        expDate: rawExp,
+        expNorm,
+        company,
+        manufacturer: (document.getElementById('lblManufacturer')?.value || '').trim(),
+        distributor: (document.getElementById('lblDistributor')?.value || '').trim(),
+        address: (document.getElementById('lblAddress')?.value || '').trim(),
+        phone: (document.getElementById('lblPhone')?.value || '').trim(),
+        origin: (document.getElementById('lblOrigin')?.value || '').trim(),
+        remark: (document.getElementById('lblRemark')?.value || '').trim(),
+        qrPayload
+      };
+    }
+
+    // 建立單張 10×10 cm 標籤 DOM（強制正方形 QR Code 26mm × 26mm）
+    function createLabel10x10Element(data, uniqueDomId) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'label-sheet-10x10';
+
+      wrapper.innerHTML = `
+        <!-- 上半部：左欄核心法規資訊 + 右欄 1:1 正方形 QR Code -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:3mm; border-bottom:1px solid #0f172a; padding-bottom:2.5mm;">
+          <div style="flex:1; min-width:0; font-size:9.5pt; line-height:1.42;">
+            <div style="font-size:13pt; font-weight:900; letter-spacing:0.3px; margin-bottom:1mm; line-height:1.25;">
+              品　　名：${escapeHtml(data.name || '未填寫')}
+            </div>
+            <div><strong>成　　分：</strong>${escapeHtml(data.ingredient || data.name || '-')}</div>
+            <div><strong>淨　　重：</strong>${escapeHtml(data.weight || '-')}</div>
+            <div><strong>批　　號：</strong><span style="font-family:monospace; font-weight:700;">${escapeHtml(data.batchNo || '-')}</span></div>
+            <div><strong>製造日期：</strong><span style="font-family:monospace;">${escapeHtml(data.mfgDate || '-')}</span></div>
+            <div><strong>有效日期：</strong><span style="font-family:monospace; font-weight:700;">${escapeHtml(data.expDate || '-')}</span></div>
+          </div>
+
+          <!-- 右上角固定 1:1 正方形 QR Code 區塊 -->
+          <div style="display:flex; flex-direction:column; align-items:center; flex-shrink:0; width:28mm;">
+            <div id="${uniqueDomId}" class="label-qr-square"></div>
+            <div style="margin-top:1mm; font-family:monospace; font-size:8pt; font-weight:800; text-align:center; line-height:1.15; word-break:break-all;">
+              料號:${escapeHtml(data.sku || '-')}
+            </div>
+            ${data.company ? `<div style="font-size:7.5pt; font-weight:700; color:#334155; text-align:center;">[${escapeHtml(data.company)}]</div>` : ''}
+          </div>
+        </div>
+
+        <!-- 下半部：廠商、銷售商、產地與備註 -->
+        <div style="font-size:8.6pt; line-height:1.42; flex:1; display:flex; flex-direction:column; justify-content:space-between; padding-top:2mm;">
+          <div>
+            ${data.manufacturer ? `<div style="word-break:break-word; margin-bottom:0.5mm;"><strong>製造廠商：</strong>${escapeHtml(data.manufacturer)}</div>` : ''}
+            ${data.distributor ? `<div style="margin-bottom:0.5mm;"><strong>銷 售 商：</strong>${escapeHtml(data.distributor)}</div>` : ''}
+            ${data.address ? `<div style="margin-bottom:0.5mm;"><strong>地　　址：</strong>${escapeHtml(data.address)}</div>` : ''}
+            ${data.phone ? `<div style="margin-bottom:0.5mm;"><strong>電　　話：</strong>${escapeHtml(data.phone)}</div>` : ''}
+            ${data.origin ? `<div><strong>原 產 地：</strong>${escapeHtml(data.origin)}</div>` : ''}
+          </div>
+          ${data.remark ? `
+            <div style="border-top:1px dashed #64748b; padding-top:1.5mm; margin-top:1.5mm; font-size:8pt; font-weight:600;">
+              <strong>備　　註：</strong>${escapeHtml(data.remark)}
+            </div>
+          ` : ''}
+        </div>
+      `;
+
+      // 使用高解析度正方形繪製 QRCode (256x256 像素塞入 26x26mm 框，確保絕對正方形與高清晰度)
+      setTimeout(() => {
+        const qrTarget = document.getElementById(uniqueDomId);
+        if (qrTarget && typeof QRCode !== 'undefined') {
+          qrTarget.innerHTML = '';
+          new QRCode(qrTarget, {
+            text: data.qrPayload || 'EMPTY',
+            width: 256,
+            height: 256,
+            colorDark: '#000000',
+            colorLight: '#ffffff',
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        }
+      }, 0);
+
+      return wrapper;
+    }
+
+    function renderLabelPreview() {
+      const data = getCurrentLabelFormData();
+      const payloadEl = document.getElementById('lblQrPayloadPreview');
+      if (payloadEl) payloadEl.innerText = data.qrPayload;
+
+      const mount = document.getElementById('labelPreviewMount');
+      if (!mount) return;
+      mount.innerHTML = '';
+      const el = createLabel10x10Element(data, 'previewQrCanvasBox');
+      mount.appendChild(el);
+    }
+
+    function addCurrentLabelToQueue() {
+      const data = getCurrentLabelFormData();
+      if (!data.sku && !data.name) {
+        alert('請至少填寫「產品編號」或「品名」再加入佇列！');
+        return;
+      }
+      const copies = Math.max(1, Math.min(50, parseInt(document.getElementById('lblCopyCount')?.value || '1', 10)));
+      labelPrintQueue.push({ data, copies });
+      renderLabelQueueUI();
+    }
+
+    function removeLabelQueueItem(idx) {
+      labelPrintQueue.splice(idx, 1);
+      renderLabelQueueUI();
+    }
+
+    function clearLabelQueue() {
+      labelPrintQueue = [];
+      renderLabelQueueUI();
+    }
+
+    function renderLabelQueueUI() {
+      const listEl = document.getElementById('labelQueueList');
+      const countEl = document.getElementById('labelQueueCount');
+      const btnCountEl = document.getElementById('printQueueBtnCount');
+      const printBtn = document.getElementById('printQueueBtn');
+
+      const totalSheets = labelPrintQueue.reduce((sum, entry) => sum + entry.copies, 0);
+      if (countEl) countEl.innerText = totalSheets;
+      if (btnCountEl) btnCountEl.innerText = totalSheets;
+      if (printBtn) printBtn.disabled = totalSheets === 0;
+
+      if (!listEl) return;
+      if (labelPrintQueue.length === 0) {
+        listEl.innerHTML = `<div class="text-slate-400 py-2 text-center">尚無加入佇列的標籤，可直接點擊右側「立即列印此張」或先加入多張批量列印</div>`;
+        return;
+      }
+
+      listEl.innerHTML = labelPrintQueue.map((entry, idx) => `
+        <div class="py-1.5 px-1 flex items-center justify-between gap-2">
+          <div class="truncate">
+            <span class="font-mono font-bold text-slate-800">[${escapeHtml(entry.data.sku || '無編號')}]</span>
+            <span class="font-semibold text-slate-700">${escapeHtml(entry.data.name || '')}</span>
+            <span class="text-slate-400 font-mono">(${escapeHtml(entry.data.batchNo || '無批號')})</span>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <span class="bg-purple-100 text-purple-800 font-bold px-1.5 py-0.5 rounded">${entry.copies} 張</span>
+            <button type="button" onclick="removeLabelQueueItem(${idx})" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-xmark"></i></button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function executePrintLabels(itemsWithCopies) {
+      if (!isCurrentUserVerifiedAdmin()) {
+        alert('權限不足！只有管理員可執行列印作業。');
+        return;
+      }
+      const printContainer = document.getElementById('labelPrintContainer');
+      if (!printContainer) return;
+      printContainer.innerHTML = '';
+
+      let seq = 0;
+      const summaryNames = [];
+      itemsWithCopies.forEach(entry => {
+        summaryNames.push(`${entry.data.sku || entry.data.name}×${entry.copies}`);
+        for (let c = 0; c < entry.copies; c++) {
+          seq++;
+          const pageDiv = document.createElement('div');
+          pageDiv.className = 'label-print-page';
+          const labelEl = createLabel10x10Element(entry.data, `printQrBox_${seq}`);
+          pageDiv.appendChild(labelEl);
+          printContainer.appendChild(pageDiv);
+        }
+      });
+
+      recordAuditLog(null, '列印 10×10cm 出貨標籤', `列印共 ${seq} 張標籤 (${summaryNames.join(', ')})`);
+
+      // 等待 QR Code Canvas 繪製完成後觸發瀏覽器列印
+      setTimeout(() => {
+        document.body.classList.add('printing-labels');
+        window.print();
+        setTimeout(() => {
+          document.body.classList.remove('printing-labels');
+        }, 500);
+      }, 250);
+    }
+
+    function printSingleCurrentLabel() {
+      const data = getCurrentLabelFormData();
+      if (!data.sku && !data.name) {
+        alert('請先填寫產品編號或品名！');
+        return;
+      }
+      executePrintLabels([{ data, copies: 1 }]);
+    }
+
+    function printLabelQueue() {
+      if (labelPrintQueue.length === 0) return;
+      executePrintLabels(labelPrintQueue);
     }
 
     function closeBarcodeScanner() {
@@ -3674,5 +4120,175 @@
       XLSX.writeFile(wb, '盤點主檔匯入範例.xlsx');
     }
   </script>
+  <!-- 管理員專用：10×10cm QR Code 出貨標籤列印中心 Modal -->
+  <div id="labelStudioModal" class="fixed inset-0 bg-black/65 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
+      <!-- 頂部標題列 -->
+      <div class="flex justify-between items-center px-4 py-3 bg-purple-950 text-white shrink-0">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-qrcode text-amber-400 text-lg"></i>
+          <div>
+            <h3 class="font-bold text-base leading-tight">出貨標籤產生與列印系統 (10 × 10 cm 正方形規格)</h3>
+            <p class="text-[11px] text-purple-200">管理員專屬權限 · QR Code 鎖定 1:1 正方形比例 · 寫入「料號|批號|效期|公司」</p>
+          </div>
+        </div>
+        <button onclick="closeLabelStudioModal()" class="text-white/70 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+      </div>
+
+      <!-- 主內容雙欄區 -->
+      <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 bg-slate-100">
+        <!-- 左側：資料選擇與標籤欄位編輯 (7欄) -->
+        <div class="lg:col-span-7 space-y-3">
+          <!-- 從現有庫存主檔快速帶入 -->
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
+            <label class="block text-xs font-bold text-purple-900">
+              <i class="fa-solid fa-database mr-1"></i>從雲端庫存主檔快速帶入品項：
+            </label>
+            <div class="flex gap-2">
+              <select id="labelInventorySelect" onchange="handleLabelInventorySelect(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium bg-slate-50 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                <option value="">-- 選擇現有庫存品項自動帶入 (或下方手動輸入) --</option>
+              </select>
+              <button type="button" onclick="loadSampleLabelPreset()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-900 hover:bg-amber-200 shrink-0" title="載入佳津紅藜麥範例">
+                載入範例
+              </button>
+            </div>
+          </div>
+
+          <!-- 標籤內容編輯表單 -->
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2.5 text-xs">
+            <div class="font-bold text-slate-800 border-b pb-1.5 flex items-center justify-between">
+              <span><i class="fa-solid fa-pen-to-square text-purple-600 mr-1"></i>標籤內容與條碼欄位設定</span>
+              <span class="text-[11px] font-mono text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">實體尺寸：10.0 × 10.0 cm</span>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">產品編號 (寫入QR) <span class="text-rose-600">*</span>：</label>
+                <input type="text" id="lblSku" oninput="renderLabelPreview()" placeholder="如 0099008" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">產品批號 (寫入QR)：</label>
+                <input type="text" id="lblBatch" oninput="renderLabelPreview()" placeholder="如 3685-260126QR" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div class="col-span-2 sm:col-span-1">
+                <label class="block font-bold text-slate-700 mb-0.5">所屬公司 (寫入QR)：</label>
+                <input type="text" id="lblCompany" oninput="renderLabelPreview()" placeholder="如 佳津" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              <div class="col-span-2">
+                <label class="block font-bold text-slate-700 mb-0.5">品名 <span class="text-rose-600">*</span>：</label>
+                <input type="text" id="lblName" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">淨重 / 規格：</label>
+                <input type="text" id="lblWeight" oninput="renderLabelPreview()" placeholder="如 25公斤" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">成分：</label>
+                <input type="text" id="lblIngredient" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">製造日期：</label>
+                <input type="text" id="lblMfgDate" oninput="renderLabelPreview()" placeholder="如 2026.01.26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">有效日期 (寫入QR)：</label>
+                <input type="text" id="lblExpDate" oninput="renderLabelPreview()" placeholder="如 2029-01-26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">製造廠商：</label>
+                <input type="text" id="lblManufacturer" oninput="renderLabelPreview()" placeholder="製造廠商名稱..." class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">銷售商全銜：</label>
+                <input type="text" id="lblDistributor" oninput="renderLabelPreview()" placeholder="如 佳津貿易股份有限公司" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-slate-700 mb-0.5">銷售商地址：</label>
+                <input type="text" id="lblAddress" oninput="renderLabelPreview()" placeholder="如 臺北市南港區八德路四段778號4樓" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">電話 / 原產地：</label>
+                <div class="flex gap-1">
+                  <input type="text" id="lblPhone" oninput="renderLabelPreview()" placeholder="電話" class="w-3/5 border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                  <input type="text" id="lblOrigin" oninput="renderLabelPreview()" placeholder="原產地" class="w-2/5 border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block font-bold text-slate-700 mb-0.5">備註標示：</label>
+              <input type="text" id="lblRemark" oninput="renderLabelPreview()" placeholder="如 非供即食，烹煮條件依加工廠條件而訂" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+            </div>
+
+            <!-- QR 編碼字串即時顯示 -->
+            <div class="bg-slate-900 text-emerald-400 rounded-lg p-2 font-mono text-[11px] flex items-center justify-between gap-2">
+              <span class="truncate"><span class="text-slate-400">QR 寫入內容：</span><strong id="lblQrPayloadPreview">0099008|3685-260126QR|2029-01-26|佳津</strong></span>
+              <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded shrink-0">1:1 正方形鎖定</span>
+            </div>
+          </div>
+
+          <!-- 待列印佇列 (支援多張批量列印) -->
+          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-bold text-slate-800"><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i>批量待列印清單 (<span id="labelQueueCount">0</span> 張)</span>
+              <div class="flex items-center gap-1.5">
+                <input type="number" id="lblCopyCount" value="1" min="1" max="50" class="w-14 border border-slate-300 rounded px-1.5 py-1 text-center font-bold" title="張數">
+                <button type="button" onclick="addCurrentLabelToQueue()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg font-bold transition">
+                  <i class="fa-solid fa-plus mr-1"></i>加入佇列
+                </button>
+                <button type="button" onclick="clearLabelQueue()" class="text-slate-500 hover:text-rose-600 px-1.5 py-1" title="清空佇列">
+                  <i class="fa-solid fa-trash-can"></i>
+                </button>
+              </div>
+            </div>
+            <div id="labelQueueList" class="max-h-28 overflow-y-auto divide-y divide-slate-100 text-[11px]">
+              <div class="text-slate-400 py-2 text-center">尚無加入佇列的標籤，可直接點擊右側「立即列印此張」或先加入多張批量列印</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 右側：10×10 cm 1:1 實體比例即時預覽與列印操作 (5欄) -->
+        <div class="lg:col-span-5 flex flex-col items-center justify-between bg-slate-200/80 rounded-xl p-3 border border-slate-300">
+          <div class="w-full flex items-center justify-between text-xs mb-2">
+            <span class="font-bold text-slate-700"><i class="fa-solid fa-eye mr-1 text-purple-700"></i>10 × 10 cm 實體比例預覽</span>
+            <span class="text-[11px] bg-white px-2 py-0.5 rounded-full font-semibold text-slate-600 border">QR 2.6 × 2.6 cm</span>
+          </div>
+
+          <!-- 10x10cm 預覽容器 -->
+          <div class="flex-1 flex items-center justify-center w-full overflow-auto py-1">
+            <div id="labelPreviewMount" class="shadow-xl"></div>
+          </div>
+
+          <div class="w-full pt-3 mt-2 border-t border-slate-300 space-y-2">
+            <div class="grid grid-cols-2 gap-2">
+              <button type="button" onclick="printSingleCurrentLabel()" class="py-2 px-3 rounded-xl bg-purple-800 hover:bg-purple-900 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-print"></i> 立即列印此張 (10×10cm)
+              </button>
+              <button type="button" id="printQueueBtn" onclick="printLabelQueue()" disabled class="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-print"></i> 批量列印佇列 (<span id="printQueueBtnCount">0</span>)
+              </button>
+            </div>
+            <p class="text-[10px] text-slate-500 text-center">列印時請將印表機紙張設為 <strong>100mm × 100mm</strong>、縮放比例設為 <strong>100%（無邊界）</strong>。</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 專用列印輸出容器 (僅在觸發列印時顯示，確保 100mm x 100mm 精準分頁) -->
+  <div id="labelPrintContainer" class="hidden"></div>
+
 </body>
 </html>
