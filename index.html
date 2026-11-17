@@ -2014,32 +2014,40 @@
         return `
           <div class="${cardBgClass} rounded-xl shadow-sm border ${cardOuterBorder} ${companyTheme.cardBorder} p-3 transition">
             
-            <!-- 卡片頂部標頭 (手機與電腦皆不擠壓變形；未展開前清晰顯示產品編號、批號、儲存地點與品名) -->
+            <!-- 卡片頂部標頭 (收合狀態僅顯示：勾選框 + 完整品名 + 產品編號/批號/儲存地點 + 狀態膠囊) -->
             <div class="space-y-1.5">
-              <!-- 第一列：左側 勾選框 + 品名標題 | 右側 狀態標籤與操作按鈕 -->
-              <div class="flex items-start sm:items-center justify-between gap-2">
-                <div class="flex items-center gap-2 flex-1 min-w-0">
-                  <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 text-indigo-600 rounded shrink-0">
-                  <div onclick="toggleCardExpand('${item.id}')" class="flex-1 min-w-0 cursor-pointer group/title">
-                    <h2 class="font-bold text-sm text-slate-800 truncate group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
-                  </div>
+              <!-- 第一列：勾選框 + 完整不截斷品名標題 -->
+              <div class="flex items-start gap-2">
+                <input type="checkbox" ${isChecked ? 'checked' : ''} onchange="toggleItemSelect('${item.id}', this.checked)" class="w-4 h-4 mt-0.5 text-indigo-600 rounded shrink-0">
+                <div onclick="toggleCardExpand('${item.id}')" class="flex-1 min-w-0 cursor-pointer group/title">
+                  <h2 class="font-bold text-sm text-slate-800 leading-snug break-words group-hover/title:text-indigo-700 transition">${escapeHtml(item.name)}</h2>
+                </div>
+              </div>
+
+              <!-- 第二列：左側僅顯示 產品編號、批號、儲存地點 | 右側僅保留狀態膠囊與展開箭頭 -->
+              <div class="pl-6 flex items-center justify-between gap-2">
+                <div onclick="event.stopPropagation()" class="flex items-center gap-1.5 flex-wrap cursor-default select-none">
+                  <!-- 產品編號 -->
+                  <span class="font-mono text-xs font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded whitespace-nowrap" title="產品編號"><span class="text-slate-400 font-sans font-normal mr-0.5">編號:</span>${escapeHtml(item.sku || '無編號')}</span>
+
+                  <!-- 產品批號 -->
+                  <span class="text-xs ${item.batchNo ? 'bg-amber-50 text-amber-900 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'} border px-1.5 py-0.5 rounded font-mono font-semibold whitespace-nowrap" title="產品批號"><i class="fa-solid fa-barcode mr-1"></i>批號:${escapeHtml(item.batchNo || '未填寫')}</span>
+
+                  <!-- 儲存地點 -->
+                  ${hasLooseInfo ? `
+                    <span class="text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="完整貨儲存地點"><i class="fa-solid fa-location-dot mr-1"></i>完整:${escapeHtml(item.location || '未指定')}</span>
+                    <span class="text-xs bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="散貨儲存地點"><i class="fa-solid fa-box-open mr-1"></i>散貨:${escapeHtml(item.looseLocation || '未指定')}</span>
+                  ` : `
+                    <span class="text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="儲存地點"><i class="fa-solid fa-location-dot mr-1"></i>地點:${escapeHtml(item.location || '未指定')}</span>
+                  `}
                 </div>
 
-                <!-- 右側階段狀態標籤與快速操作群組 -->
-                <div class="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-                  <!-- 倉管一鍵「帳實相符」快速初盤按鈕 -->
-                  ${(!isWarehouseDone && canEditWarehouse) ? `
-                    <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm whitespace-nowrap transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
-                      <i class="fa-solid fa-check-double mr-0.5"></i>帳實相符
-                    </button>
-                  ` : ''}
-
-                  <!-- 倉管初盤狀態 -->
+                <!-- 右側狀態標籤與展開按鈕 -->
+                <div class="flex items-center gap-1 shrink-0">
                   <span class="px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${isWarehouseDone ? 'bg-teal-100 text-teal-800' : 'bg-white/80 border border-slate-200 text-slate-500'}">
                     ${isWarehouseDone ? '<i class="fa-solid fa-check mr-0.5"></i>已初盤' : '待初盤'}
                   </span>
 
-                  <!-- 品管檢查狀態 -->
                   ${isAudited 
                     ? `<span class="px-2 py-0.5 rounded-full text-[11px] font-bold whitespace-nowrap ${isAbnormal ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700'}">
                         <i class="fa-solid ${isAbnormal ? 'fa-triangle-exclamation' : 'fa-circle-check'} mr-0.5"></i>${isAbnormal ? '異常' : '正常'}
@@ -2049,53 +2057,44 @@
                   <button onclick="toggleCardExpand('${item.id}')" class="text-slate-500 hover:text-indigo-600 p-1 text-sm font-bold shrink-0" title="${isExpanded ? '收合' : '展開'}">
                     <i class="fa-solid ${isExpanded ? 'fa-chevron-up text-indigo-600' : 'fa-chevron-down'}"></i>
                   </button>
-                  ${currentRole === 'admin' ? `
-                    <button onclick="openLabelStudioWithItem('${item.id}')" class="text-purple-600 hover:text-purple-800 hover:bg-purple-100/70 p-1 rounded text-xs shrink-0" title="列印 10×10cm QR 標籤 (管理員專用)">
-                      <i class="fa-solid fa-qrcode"></i>
-                    </button>
-                    <button onclick="deleteSingleItem('${item.id}')" class="text-slate-400 hover:text-rose-600 p-1 text-xs shrink-0" title="刪除品項">
-                      <i class="fa-solid fa-trash-can"></i>
-                    </button>
-                  ` : ''}
                 </div>
-              </div>
-
-              <!-- 第二列：完整寬度標籤資訊列（未展開前必顯示：產品編號、批號、儲存地點，以及公司/類別/效期） -->
-              <div onclick="event.stopPropagation()" class="pl-6 flex items-center gap-1.5 flex-wrap cursor-default select-none">
-                ${item.company ? `
-                  <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold whitespace-nowrap" title="所屬公司"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
-                ` : ''}
-
-                <!-- 產品編號 (必顯示) -->
-                <span class="font-mono text-xs font-bold text-slate-800 bg-white border border-slate-300 px-1.5 py-0.5 rounded whitespace-nowrap" title="產品編號"><span class="text-slate-400 font-sans font-normal mr-0.5">編號:</span>${escapeHtml(item.sku || '無編號')}</span>
-
-                <!-- 產品批號 (必顯示，無批號時顯示未填寫) -->
-                <span class="text-xs ${item.batchNo ? 'bg-amber-50 text-amber-900 border-amber-200' : 'bg-slate-50 text-slate-500 border-slate-200'} border px-1.5 py-0.5 rounded font-mono font-semibold whitespace-nowrap" title="產品批號"><i class="fa-solid fa-barcode mr-1"></i>批號:${escapeHtml(item.batchNo || '未填寫')}</span>
-
-                <!-- 儲存地點 (必顯示) -->
-                ${hasLooseInfo ? `
-                  <span class="text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="完整貨儲存地點"><i class="fa-solid fa-location-dot mr-1"></i>完整:${escapeHtml(item.location || '未指定')}</span>
-                  <span class="text-xs bg-teal-50 text-teal-800 border border-teal-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="散貨儲存地點"><i class="fa-solid fa-box-open mr-1"></i>散貨:${escapeHtml(item.looseLocation || '未指定')}</span>
-                ` : `
-                  <span class="text-xs bg-indigo-50 text-indigo-800 border border-indigo-200 px-1.5 py-0.5 rounded font-semibold whitespace-nowrap" title="儲存地點"><i class="fa-solid fa-location-dot mr-1"></i>地點:${escapeHtml(item.location || '未指定')}</span>
-                `}
-
-                ${getCategoryBadgeHtml(item.category)}
-
-                ${normalizedExp ? `
-                  <span class="text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold whitespace-nowrap" title="${expTooltip}"><i class="fa-regular fa-calendar-check mr-1"></i>${escapeHtml(normalizedExp)}</span>
-                ` : ''}
-
-                ${isExpiringSoon ? `<span class="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold whitespace-nowrap">即期品 (${expInfo.daysLeft}天)</span>` : ''}
-                ${isExpired ? `<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold whitespace-nowrap">已過期</span>` : ''}
-                ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold whitespace-nowrap"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
-                ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">盤差: ${diff}</span>` : ''}
               </div>
             </div>
 
             ${isExpanded ? `
               <div class="pt-3 mt-2 border-t border-slate-200/80 space-y-3 bg-white/90 rounded-lg p-2.5">
                 
+                <!-- 展開後才顯示的其餘資訊標籤列（所屬公司、物料類別、有效日期、警告/盤差/鎖定狀態、管理員工具） -->
+                <div class="flex items-center justify-between gap-2 flex-wrap pb-2 border-b border-slate-200/70">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    ${item.company ? `
+                      <span class="text-xs ${companyTheme.badge} border px-1.5 py-0.5 rounded font-bold whitespace-nowrap" title="所屬公司"><i class="fa-solid fa-building mr-1"></i>${escapeHtml(item.company)}</span>
+                    ` : ''}
+
+                    ${getCategoryBadgeHtml(item.category)}
+
+                    ${normalizedExp ? `
+                      <span class="text-xs ${expBadgeClass} border px-1.5 py-0.5 rounded font-mono font-semibold whitespace-nowrap" title="${expTooltip}"><i class="fa-regular fa-calendar-check mr-1"></i>效期:${escapeHtml(normalizedExp)}</span>
+                    ` : ''}
+
+                    ${isExpiringSoon ? `<span class="text-[10px] bg-orange-500 text-white px-1.5 py-0.5 rounded font-bold whitespace-nowrap">即期品 (${expInfo.daysLeft}天)</span>` : ''}
+                    ${isExpired ? `<span class="text-[10px] bg-rose-600 text-white px-1.5 py-0.5 rounded font-bold whitespace-nowrap">已過期</span>` : ''}
+                    ${item.lockedByBuyer ? `<span class="text-[10px] bg-amber-200 text-amber-900 px-1.5 py-0.5 rounded font-bold whitespace-nowrap"><i class="fa-solid fa-lock mr-0.5"></i>已盤點(鎖定)</span>` : ''}
+                    ${hasDiscrepancy ? `<span class="text-[10px] bg-orange-100 text-orange-800 border border-orange-200 px-1.5 py-0.5 rounded font-bold whitespace-nowrap">盤差: ${diff}</span>` : ''}
+                  </div>
+
+                  ${currentRole === 'admin' ? `
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button onclick="openLabelStudioWithItem('${item.id}')" class="text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 px-2 py-0.5 rounded text-xs font-semibold" title="列印 10×10cm QR 標籤 (管理員專用)">
+                        <i class="fa-solid fa-qrcode mr-1"></i>QR標籤
+                      </button>
+                      <button onclick="deleteSingleItem('${item.id}')" class="text-rose-600 bg-rose-50 hover:bg-rose-100 border border-rose-200 px-2 py-0.5 rounded text-xs font-semibold" title="刪除品項">
+                        <i class="fa-solid fa-trash-can mr-1"></i>刪除
+                      </button>
+                    </div>
+                  ` : ''}
+                </div>
+
                 <!-- 倉管雙儲存地點下拉選單 -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <div>
@@ -2161,13 +2160,18 @@
                   </div>
 
                   ${(currentRole === 'warehouse' || currentRole === 'admin') ? `
-                    <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
+                    <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-200/70">
                       <div class="text-[11px] text-slate-500">
                         ${isWarehouseDone 
                           ? `<span class="text-teal-700 font-semibold"><i class="fa-solid fa-circle-check mr-1"></i>已初盤 (${escapeHtml(item.warehouseAuditor || '')} ${escapeHtml(item.warehouseTime || '')})</span>` 
-                          : `<span>確認儲位與初盤數量後請點擊儲存：</span>`}
+                          : `<span>確認儲位與初盤數量後請操作：</span>`}
                       </div>
-                      <div class="flex gap-1.5">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        ${(!isWarehouseDone && canEditWarehouse) ? `
+                          <button type="button" onclick="quickMatchWarehouse('${item.id}')" class="px-3 py-1.5 rounded-lg text-xs font-bold bg-teal-600 hover:bg-teal-700 text-white shadow-sm transition" title="確認數量與帳面 (${item.systemQty} ${escapeHtml(item.unit)}) 一致並完成初盤">
+                            <i class="fa-solid fa-check-double mr-1"></i>帳實相符
+                          </button>
+                        ` : ''}
                         <button onclick="saveWarehouseCheck('${item.id}')" ${!canEditWarehouse ? 'disabled' : ''} class="px-3 py-1.5 rounded-lg text-xs font-bold ${isWarehouseDone ? 'bg-teal-100 text-teal-800 border border-teal-300' : 'bg-emerald-600 text-white hover:bg-emerald-700'} shadow-sm disabled:opacity-50 transition">
                           <i class="fa-solid fa-floppy-disk mr-1"></i>${isWarehouseDone ? '更新初盤紀錄' : '儲存初盤紀錄'}
                         </button>
