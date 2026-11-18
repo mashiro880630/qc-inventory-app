@@ -119,44 +119,64 @@
   <div>
     <!-- 頂部導覽列 (隨角色切換背景色) -->
     <header id="appHeader" class="bg-emerald-900 text-white sticky top-0 z-30 shadow-md transition-colors duration-300">
-      <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center gap-2">
+      <div class="max-w-4xl mx-auto px-3 sm:px-4 py-2.5 flex justify-between items-center gap-2">
         <div class="flex items-center space-x-2 shrink-0">
           <i class="fa-solid fa-boxes-packing text-amber-400 text-xl"></i>
-          <h1 class="font-bold text-lg tracking-wide">盤點系統</h1>
+          <h1 class="font-bold text-base sm:text-lg tracking-wide whitespace-nowrap">盤點系統</h1>
         </div>
         
-        <div class="flex items-center space-x-2 flex-wrap justify-end">
+        <div class="flex items-center gap-1.5 shrink-0">
           <!-- 角色視圖選單 (依操作人員權限自動鎖定或開放) -->
-          <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none">
+          <select id="roleSelect" onchange="handleRoleSwitch(this.value)" class="bg-black/30 text-white text-xs font-bold border border-white/30 rounded-lg px-2 py-1.5 focus:outline-none max-w-[130px] sm:max-w-none truncate">
             <option value="qc" class="text-slate-800 bg-white">權限：品管人員 (QC)</option>
             <option value="warehouse" class="text-slate-800 bg-white">權限：倉管人員 (Warehouse)</option>
             <option value="buyer" class="text-slate-800 bg-white">權限：採購人員 (Purchasing)</option>
             <option value="admin" class="text-slate-800 bg-white">權限：管理員 (Admin)</option>
           </select>
 
-          <!-- 管理員專屬功能按鈕 -->
-          <div id="adminControls" class="flex items-center gap-1.5 hidden">
-            <button onclick="openLabelStudioModal()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm transition" title="管理員專用：10×10cm 出貨標籤與 QR Code 列印">
-              <i class="fa-solid fa-qrcode"></i> 標籤
+          <!-- 管理員專屬功能整合下拉選單 -->
+          <div id="adminControls" class="relative hidden">
+            <button type="button" id="adminMenuToggleBtn" onclick="toggleAdminMenu(event)" class="bg-amber-500 hover:bg-amber-400 text-slate-950 px-2.5 py-1.5 rounded-lg text-xs font-bold flex items-center gap-1 shadow-sm whitespace-nowrap shrink-0 transition" title="開啟管理員功能選單">
+              <i class="fa-solid fa-sliders"></i>
+              <span>管理</span>
+              <i id="adminMenuChevron" class="fa-solid fa-chevron-down text-[10px] transition-transform duration-200"></i>
             </button>
-            <button onclick="openImportModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="匯入主檔">
-              <i class="fa-solid fa-file-import"></i> 匯入
-            </button>
-            <button onclick="openAuditLogModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="查看全站操作日誌">
-              <i class="fa-solid fa-clock-rotate-left"></i> 紀錄
-            </button>
-            <button onclick="openPersonnelModal()" class="bg-white/20 hover:bg-white/30 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition" title="人員與密碼管理">
-              <i class="fa-solid fa-user-gear"></i> 人員
-            </button>
-            <button onclick="toggleGlobalLock()" id="globalLockBtn" class="bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
-              <i class="fa-solid fa-lock"></i> 全域鎖定
-            </button>
-            <button onclick="confirmClearAllData()" class="bg-rose-700 hover:bg-rose-600 px-2 py-1.5 rounded-lg text-xs font-semibold transition" title="清空雲端資料(保留操作紀錄)">
-              <i class="fa-solid fa-trash-can"></i>
-            </button>
+
+            <!-- 下拉選單面板 -->
+            <div id="adminDropdownMenu" class="hidden absolute right-0 mt-2 w-52 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 py-1.5 z-50 text-xs">
+              <div class="px-3 py-1.5 text-[10px] font-bold text-purple-800 bg-purple-50 border-b border-slate-100 flex items-center justify-between">
+                <span>管理員專屬功能</span>
+                <i class="fa-solid fa-shield-halved"></i>
+              </div>
+              <button type="button" onclick="closeAdminMenu(); openLabelStudioModal();" class="w-full px-3 py-2 text-left hover:bg-amber-50 flex items-center gap-2.5 font-bold text-amber-900 transition">
+                <span class="w-5 text-center text-amber-600"><i class="fa-solid fa-qrcode"></i></span>
+                <span>標籤列印 (10×10cm)</span>
+              </button>
+              <button type="button" onclick="closeAdminMenu(); openImportModal();" class="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 font-semibold text-slate-700 transition">
+                <span class="w-5 text-center text-indigo-600"><i class="fa-solid fa-file-import"></i></span>
+                <span>匯入庫存主檔</span>
+              </button>
+              <button type="button" onclick="closeAdminMenu(); openAuditLogModal();" class="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 font-semibold text-slate-700 transition">
+                <span class="w-5 text-center text-purple-600"><i class="fa-solid fa-clock-rotate-left"></i></span>
+                <span>查看操作紀錄</span>
+              </button>
+              <button type="button" onclick="closeAdminMenu(); openPersonnelModal();" class="w-full px-3 py-2 text-left hover:bg-slate-50 flex items-center gap-2.5 font-semibold text-slate-700 transition">
+                <span class="w-5 text-center text-teal-600"><i class="fa-solid fa-user-gear"></i></span>
+                <span>人員與密碼管理</span>
+              </button>
+              <div class="my-1 border-t border-slate-100"></div>
+              <button type="button" id="globalLockBtn" onclick="closeAdminMenu(); toggleGlobalLock();" class="w-full px-3 py-2 text-left hover:bg-amber-50 flex items-center gap-2.5 font-bold text-amber-700 transition">
+                <span class="w-5 text-center"><i class="fa-solid fa-lock"></i></span>
+                <span>全域鎖定系統</span>
+              </button>
+              <button type="button" onclick="closeAdminMenu(); confirmClearAllData();" class="w-full px-3 py-2 text-left hover:bg-rose-50 flex items-center gap-2.5 font-bold text-rose-600 transition">
+                <span class="w-5 text-center"><i class="fa-solid fa-trash-can"></i></span>
+                <span>清空雲端庫存資料</span>
+              </button>
+            </div>
           </div>
 
-          <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition">
+          <button onclick="openExportModal()" class="bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 whitespace-nowrap shrink-0 transition">
             <i class="fa-solid fa-file-export"></i> 匯出
           </button>
         </div>
@@ -1109,12 +1129,12 @@
         const lockBtn = document.getElementById('globalLockBtn');
         if (isGlobalLocked) {
           notice.classList.remove('hidden');
-          lockBtn.innerHTML = `<i class="fa-solid fa-lock-open"></i> 解除全域鎖定`;
-          lockBtn.className = "bg-emerald-600 hover:bg-emerald-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition";
+          lockBtn.innerHTML = `<span class="w-5 text-center"><i class="fa-solid fa-lock-open"></i></span><span>解除全域鎖定</span>`;
+          lockBtn.className = "w-full px-3 py-2 text-left hover:bg-emerald-50 flex items-center gap-2.5 font-bold text-emerald-700 transition";
         } else {
           notice.classList.add('hidden');
-          lockBtn.innerHTML = `<i class="fa-solid fa-lock"></i> 全域鎖定`;
-          lockBtn.className = "bg-amber-600 hover:bg-amber-500 px-2.5 py-1.5 rounded-lg text-xs font-semibold flex items-center gap-1 transition";
+          lockBtn.innerHTML = `<span class="w-5 text-center"><i class="fa-solid fa-lock"></i></span><span>全域鎖定系統</span>`;
+          lockBtn.className = "w-full px-3 py-2 text-left hover:bg-amber-50 flex items-center gap-2.5 font-bold text-amber-700 transition";
         }
         updateAddOnSiteBtnVisibility();
         renderItemList();
@@ -1400,6 +1420,35 @@
         recordAuditLog(null, '系統全域鎖定切換', targetState ? '解除鎖定 → 全域鎖定' : '全域鎖定 → 解除鎖定');
       }
     }
+
+    // 管理員下拉選單開關控制
+    function toggleAdminMenu(event) {
+      if (event) event.stopPropagation();
+      const menu = document.getElementById('adminDropdownMenu');
+      const chevron = document.getElementById('adminMenuChevron');
+      if (!menu) return;
+      const isHidden = menu.classList.contains('hidden');
+      if (isHidden) {
+        menu.classList.remove('hidden');
+        if (chevron) chevron.classList.add('rotate-180');
+      } else {
+        closeAdminMenu();
+      }
+    }
+
+    function closeAdminMenu() {
+      const menu = document.getElementById('adminDropdownMenu');
+      const chevron = document.getElementById('adminMenuChevron');
+      if (menu) menu.classList.add('hidden');
+      if (chevron) chevron.classList.remove('rotate-180');
+    }
+
+    document.addEventListener('click', (e) => {
+      const container = document.getElementById('adminControls');
+      if (container && !container.contains(e.target)) {
+        closeAdminMenu();
+      }
+    });
 
     function toggleBuyerLock(id) {
       if (currentRole !== 'buyer' && currentRole !== 'admin') return;
