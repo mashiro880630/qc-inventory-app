@@ -15,7 +15,6 @@
 
   <!-- Firebase 8.x SDK -->
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
   <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
   <!-- QRCode.js (生成正正方形 QR Code 出貨標籤) -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -552,27 +551,42 @@
         <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員與密碼管理</h3>
         <button onclick="closePersonnelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div class="flex gap-2 mb-2">
-        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
-        <select id="newPersonRole" class="border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
-          <option value="warehouse">倉管 (Warehouse)</option>
-          <option value="qc">品管 (QC)</option>
-          <option value="buyer">採購 (Purchasing)</option>
-          <option value="admin">管理員 (Admin)</option>
-        </select>
-        <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
+      <div class="flex flex-wrap sm:flex-nowrap gap-1.5 mb-2">
+        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="w-full sm:flex-1 min-w-0 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
+        <div class="flex gap-1.5 w-full sm:w-auto shrink-0">
+          <select id="newPersonRole" class="flex-1 sm:flex-initial border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
+            <option value="warehouse">倉管 (Warehouse)</option>
+            <option value="qc">品管 (QC)</option>
+            <option value="buyer">採購 (Purchasing)</option>
+            <option value="admin">管理員 (Admin)</option>
+          </select>
+          <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
+        </div>
       </div>
       <p class="text-[11px] text-slate-500 mb-2"><i class="fa-solid fa-arrows-up-down mr-1 text-indigo-600"></i>點擊右側上下箭頭可調整選單排序（新裝置首次進入將預設首位倉管人員）</p>
       <div id="personnelList" class="max-h-48 overflow-y-auto divide-y divide-slate-200/70 border rounded-lg p-2 bg-slate-50"></div>
 
-      <!-- Firebase Authentication 安全提示區塊 -->
-      <div class="mt-4 pt-3 border-t border-slate-200 space-y-1.5 text-xs">
+      <!-- 管理員與採購驗證密碼設定區塊 -->
+      <div class="mt-4 pt-3 border-t border-slate-200 space-y-2 text-xs">
         <div class="font-bold text-slate-800 flex items-center gap-1.5">
-          <i class="fa-solid fa-shield-halved text-emerald-600"></i> Firebase Authentication 帳號驗證
+          <i class="fa-solid fa-key text-amber-600"></i> 部門切換密碼設定 (雲端同步)
         </div>
-        <p class="text-[11px] text-slate-500 leading-relaxed">
-          本系統已升級為 Firebase Authentication 伺服器端登入驗證。如需修改「管理員」或「採購人員」登入密碼，請直接至 Firebase Console 的 <strong>Authentication → Users</strong> 進行重設。
-        </p>
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-purple-800 mb-0.5">管理員密碼：</label>
+            <div class="flex gap-1">
+              <input type="text" id="adminPinInput" placeholder="預設 8888" class="w-full border border-slate-300 rounded px-2 py-1 font-mono text-xs">
+              <button type="button" onclick="saveRolePin('admin')" class="bg-purple-700 hover:bg-purple-800 text-white px-2 py-1 rounded text-[11px] font-bold shrink-0">儲存</button>
+            </div>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-amber-800 mb-0.5">採購人員密碼：</label>
+            <div class="flex gap-1">
+              <input type="text" id="buyerPinInput" placeholder="預設 6666" class="w-full border border-slate-300 rounded px-2 py-1 font-mono text-xs">
+              <button type="button" onclick="saveRolePin('buyer')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-bold shrink-0">儲存</button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -677,19 +691,10 @@
     
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
-    const auth = firebase.auth();
 
-    // =========================================================================
-    // 【重要設定區】請務必確認以下信箱與密碼與 Firebase Console → Authentication 一致
-    // 1. 一般作業員帳號 (staffEmail / staffPassword) 用於開啟網頁時背景自動登入載入名單
-    // 2. 管理員與採購切換身份時，將分別使用 adminEmail 與 buyerEmail 進行密碼驗證
-    // =========================================================================
-    const AUTH_ACCOUNTS = {
-      adminEmail: "admin@company.local",
-      buyerEmail: "buyer@company.local",
-      staffEmail: "staff@company.local",
-      staffPassword: "StaffPassword123!"
-    };
+    // 本機與雲端同步的驗證密碼預設值（無需 Firebase Authentication 登入）
+    let adminPinCode = "8888";
+    let buyerPinCode = "6666";
 
     // 即期品預警天數門檻
     const EXPIRING_SOON_DAYS = 90;
@@ -1082,68 +1087,13 @@
              personnelList[0];
     }
 
-    let isFirebaseListenersInitialized = false;
-
     window.addEventListener('DOMContentLoaded', () => {
       setupInputFocusGuards();
       loadLocalAuditor();
       renderAuditorOptions();
       syncRoleWithOperator(true);
-      initAuthAndListeners();
+      initFirebaseListeners();
     });
-
-    function initAuthAndListeners() {
-      auth.onAuthStateChanged(async (user) => {
-        if (!user) {
-          try {
-            await auth.signInWithEmailAndPassword(AUTH_ACCOUNTS.staffEmail, AUTH_ACCOUNTS.staffPassword);
-          } catch (err) {
-            console.error("預設作業員帳號登入失敗，請確認 Firebase Authentication 已建立對應帳號:", err);
-            document.getElementById('syncStatus').className = "inline-block w-2 h-2 rounded-full bg-rose-500";
-            document.getElementById('savedTimeNotice').innerText = '登入驗證失敗';
-          }
-          return;
-        }
-
-        try {
-          const roleSnap = await db.ref(`user_roles/${user.uid}`).once('value');
-          const userInfo = roleSnap.val() || { role: 'staff' };
-
-          isAdminVerified = (userInfo.role === 'admin');
-          isBuyerVerified = (userInfo.role === 'buyer' || userInfo.role === 'admin');
-
-          if (userInfo.role === 'admin') {
-            currentRole = 'admin';
-          } else if (userInfo.role === 'buyer') {
-            currentRole = 'buyer';
-          } else {
-            const localPerson = personnelList.find(p => p.name === selectedAuditor);
-            if (localPerson && localPerson.role !== 'admin' && localPerson.role !== 'buyer') {
-              currentRole = localPerson.role;
-            } else {
-              const fallback = getDefaultWarehousePerson();
-              if (fallback) {
-                selectedAuditor = fallback.name;
-                currentRole = fallback.role;
-              }
-            }
-          }
-
-          document.getElementById('syncStatus').className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
-          if (!isFirebaseListenersInitialized) {
-            isFirebaseListenersInitialized = true;
-            initFirebaseListeners();
-          }
-
-          renderAuditorOptions();
-          updateRoleUI();
-          updateBatchActionBtns();
-          renderItemList();
-        } catch (err) {
-          console.error("讀取 user_roles 權限失敗:", err);
-        }
-      });
-    }
 
     // 設定卡片輸入框焦點保護，防止手機輸入數字時列表整頁重繪導致鍵盤收合
     function setupInputFocusGuards() {
@@ -1177,6 +1127,18 @@
     }
 
     function initFirebaseListeners() {
+      db.ref('system_settings/adminPin').on('value', (snapshot) => {
+        if (snapshot.val()) adminPinCode = String(snapshot.val());
+        const input = document.getElementById('adminPinInput');
+        if (input) input.value = adminPinCode;
+      });
+
+      db.ref('system_settings/buyerPin').on('value', (snapshot) => {
+        if (snapshot.val()) buyerPinCode = String(snapshot.val());
+        const input = document.getElementById('buyerPinInput');
+        if (input) input.value = buyerPinCode;
+      });
+
       db.ref('system_settings/isGlobalLocked').on('value', (snapshot) => {
         isGlobalLocked = !!snapshot.val();
         const notice = document.getElementById('globalLockNotice');
@@ -1278,30 +1240,27 @@
       updateRoleUI();
     }
 
-    async function handleAuditorChange(newName) {
+    function handleAuditorChange(newName) {
       const targetPerson = personnelList.find(p => p.name === newName);
       if (!targetPerson) return;
 
       if (targetPerson.role === 'admin') {
         if (!isAdminVerified) {
-          const password = prompt(`【管理員身份驗證】切換至「${targetPerson.name}」需輸入管理員登入密碼：`, "");
-          if (!password) {
+          const password = prompt(`【管理員身份驗證】切換至「${targetPerson.name}」需輸入管理員密碼：`, "");
+          if (password === null) {
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
-          try {
-            await auth.signInWithEmailAndPassword(AUTH_ACCOUNTS.adminEmail, password);
-            isAdminVerified = true;
-            isBuyerVerified = false;
-            selectedAuditor = targetPerson.name;
-            currentRole = "admin";
-            localStorage.setItem('qc_selected_auditor', selectedAuditor);
-            alert("管理員身份驗證成功！已解鎖全權限與所有頁面切換功能。");
-          } catch (error) {
-            alert("密碼錯誤或帳號未啟用！無法切換至管理員身份。");
+          if (password.trim() !== adminPinCode) {
+            alert("密碼錯誤！無法切換至管理員身份。");
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
+          isAdminVerified = true;
+          isBuyerVerified = false;
+          selectedAuditor = targetPerson.name;
+          currentRole = "admin";
+          localStorage.setItem('qc_selected_auditor', selectedAuditor);
         } else {
           selectedAuditor = targetPerson.name;
           currentRole = "admin";
@@ -1309,37 +1268,27 @@
         }
       } else if (targetPerson.role === 'buyer') {
         if (!isBuyerVerified) {
-          const password = prompt(`【採購身份驗證】切換至「${targetPerson.name}」需輸入採購人員登入密碼：`, "");
-          if (!password) {
+          const password = prompt(`【採購身份驗證】切換至「${targetPerson.name}」需輸入採購人員密碼：`, "");
+          if (password === null) {
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
-          try {
-            await auth.signInWithEmailAndPassword(AUTH_ACCOUNTS.buyerEmail, password);
-            isBuyerVerified = true;
-            isAdminVerified = false;
-            selectedAuditor = targetPerson.name;
-            currentRole = "buyer";
-            localStorage.setItem('qc_selected_auditor', selectedAuditor);
-            alert("採購身份驗證成功！已進入採購人員模式。");
-          } catch (error) {
-            alert("密碼錯誤或帳號未啟用！無法切換至採購人員身份。");
+          if (password.trim() !== buyerPinCode) {
+            alert("密碼錯誤！無法切換至採購人員身份。");
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
+          isBuyerVerified = true;
+          isAdminVerified = false;
+          selectedAuditor = targetPerson.name;
+          currentRole = "buyer";
+          localStorage.setItem('qc_selected_auditor', selectedAuditor);
         } else {
           selectedAuditor = targetPerson.name;
           currentRole = "buyer";
           localStorage.setItem('qc_selected_auditor', selectedAuditor);
         }
       } else {
-        if (isAdminVerified || isBuyerVerified) {
-          try {
-            await auth.signInWithEmailAndPassword(AUTH_ACCOUNTS.staffEmail, AUTH_ACCOUNTS.staffPassword);
-          } catch (err) {
-            console.error("切回一般作業員帳號失敗:", err);
-          }
-        }
         isAdminVerified = false;
         isBuyerVerified = false;
         selectedAuditor = targetPerson.name;
@@ -1350,6 +1299,25 @@
       updateRoleUI();
       updateBatchActionBtns();
       renderItemList();
+    }
+
+    function saveRolePin(roleType) {
+      if (currentRole !== 'admin') return;
+      if (roleType === 'admin') {
+        const val = (document.getElementById('adminPinInput')?.value || '').trim();
+        if (!val) { alert('密碼不可為空白'); return; }
+        adminPinCode = val;
+        db.ref('system_settings/adminPin').set(val);
+        recordAuditLog(null, '修改管理員密碼', '已更新雲端管理員驗證密碼');
+        alert('管理員密碼已更新並同步至雲端！');
+      } else if (roleType === 'buyer') {
+        const val = (document.getElementById('buyerPinInput')?.value || '').trim();
+        if (!val) { alert('密碼不可為空白'); return; }
+        buyerPinCode = val;
+        db.ref('system_settings/buyerPin').set(val);
+        recordAuditLog(null, '修改採購人員密碼', '已更新雲端採購人員驗證密碼');
+        alert('採購人員密碼已更新並同步至雲端！');
+      }
     }
 
     function handleRoleSwitch(targetRole) {
@@ -1531,6 +1499,10 @@
 
     function openPersonnelModal() {
       if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單'); return; }
+      const adminInput = document.getElementById('adminPinInput');
+      const buyerInput = document.getElementById('buyerPinInput');
+      if (adminInput) adminInput.value = adminPinCode;
+      if (buyerInput) buyerInput.value = buyerPinCode;
       renderPersonnelList();
       document.getElementById('personnelModal').classList.remove('hidden');
     }
