@@ -679,12 +679,16 @@
     const db = firebase.database();
     const auth = firebase.auth();
 
-    // 部門對應 Firebase Authentication 登入信箱與一般作業員預設帳號設定
+    // =========================================================================
+    // 【重要設定區】請務必確認以下信箱與密碼與 Firebase Console → Authentication 一致
+    // 1. 一般作業員帳號 (staffEmail / staffPassword) 用於開啟網頁時背景自動登入載入名單
+    // 2. 管理員與採購切換身份時，將分別使用 adminEmail 與 buyerEmail 進行密碼驗證
+    // =========================================================================
     const AUTH_ACCOUNTS = {
       adminEmail: "admin@company.local",
       buyerEmail: "buyer@company.local",
       staffEmail: "staff@company.local",
-      staffPassword: "StaffPassword123!" // 請與 Firebase Authentication 建立的一般作業員密碼一致
+      staffPassword: "StaffPassword123!"
     };
 
     // 即期品預警天數門檻
@@ -1125,6 +1129,7 @@
             }
           }
 
+          document.getElementById('syncStatus').className = "inline-block w-2 h-2 rounded-full bg-emerald-500";
           if (!isFirebaseListenersInitialized) {
             isFirebaseListenersInitialized = true;
             initFirebaseListeners();
