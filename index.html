@@ -323,7 +323,7 @@
         <button onclick="closeBarcodeScanner()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
       <div class="bg-indigo-50 border border-indigo-200 rounded-lg px-2.5 py-1.5 mb-2.5 text-[11px] text-indigo-900 flex items-center justify-between">
-        <span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>自動辨識：一維條碼（料號）或二維 QR Code（料號|批號|效期|公司）</span>
+        <span><i class="fa-solid fa-wand-magic-sparkles mr-1 text-indigo-600"></i>自動辨識：一維條碼（料號）或二維 QR Code（料號|批號|效期）</span>
       </div>
       <div id="qrReader" class="w-full rounded-lg overflow-hidden bg-slate-900 min-h-[250px]"></div>
       <p id="scannerStatusText" class="text-xs text-slate-600 text-center mt-2.5 font-medium">請將一維條碼或正方形 QR Code 對準鏡頭框內...</p>
@@ -551,41 +551,38 @@
         <h3 class="font-bold text-slate-800 text-base"><i class="fa-solid fa-users-gear text-indigo-600 mr-1.5"></i>操作人員與密碼管理</h3>
         <button onclick="closePersonnelModal()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-lg"></i></button>
       </div>
-      <div class="flex flex-wrap sm:flex-nowrap gap-1.5 mb-2">
-        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="w-full sm:flex-1 min-w-0 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
-        <div class="flex gap-1.5 w-full sm:w-auto shrink-0">
-          <select id="newPersonRole" class="flex-1 sm:flex-initial border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
-            <option value="warehouse">倉管 (Warehouse)</option>
-            <option value="qc">品管 (QC)</option>
-            <option value="buyer">採購 (Purchasing)</option>
-            <option value="admin">管理員 (Admin)</option>
-          </select>
-          <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
-        </div>
+      <div class="flex gap-2 mb-2">
+        <input type="text" id="newPersonInput" placeholder="輸入人員姓名..." class="flex-1 border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-indigo-500">
+        <select id="newPersonRole" class="border rounded-lg px-2 py-1.5 text-xs bg-slate-50 font-bold">
+          <option value="warehouse">倉管 (Warehouse)</option>
+          <option value="qc">品管 (QC)</option>
+          <option value="buyer">採購 (Purchasing)</option>
+          <option value="admin">管理員 (Admin)</option>
+        </select>
+        <button onclick="addPersonnel()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-indigo-700 shrink-0">新增</button>
       </div>
       <p class="text-[11px] text-slate-500 mb-2"><i class="fa-solid fa-arrows-up-down mr-1 text-indigo-600"></i>點擊右側上下箭頭可調整選單排序（新裝置首次進入將預設首位倉管人員）</p>
       <div id="personnelList" class="max-h-48 overflow-y-auto divide-y divide-slate-200/70 border rounded-lg p-2 bg-slate-50"></div>
 
-      <!-- 管理員與採購驗證密碼設定區塊 -->
-      <div class="mt-4 pt-3 border-t border-slate-200 space-y-2 text-xs">
+      <!-- 系統通行密碼設定區塊 -->
+      <div class="mt-4 pt-3 border-t border-slate-200 space-y-2.5 text-xs">
         <div class="font-bold text-slate-800 flex items-center gap-1.5">
-          <i class="fa-solid fa-key text-amber-600"></i> 部門切換密碼設定 (雲端同步)
+          <i class="fa-solid fa-key text-amber-600"></i> 部門通行密碼設定
         </div>
-        <div class="grid grid-cols-2 gap-2">
+        <div class="grid grid-cols-2 gap-2.5">
           <div>
-            <label class="block text-[11px] font-bold text-purple-800 mb-0.5">管理員密碼：</label>
-            <div class="flex gap-1">
-              <input type="text" id="adminPinInput" placeholder="預設 8888" class="w-full border border-slate-300 rounded px-2 py-1 font-mono text-xs">
-              <button type="button" onclick="saveRolePin('admin')" class="bg-purple-700 hover:bg-purple-800 text-white px-2 py-1 rounded text-[11px] font-bold shrink-0">儲存</button>
-            </div>
+            <label class="block text-[11px] font-bold text-amber-800 mb-1">採購人員通行密碼：</label>
+            <input type="text" id="settingBuyerPin" placeholder="預設 1234" class="w-full border border-amber-300 bg-amber-50/40 rounded-lg px-2.5 py-1.5 font-mono font-bold text-slate-800 focus:ring-1 focus:ring-amber-500 focus:outline-none">
           </div>
           <div>
-            <label class="block text-[11px] font-bold text-amber-800 mb-0.5">採購人員密碼：</label>
-            <div class="flex gap-1">
-              <input type="text" id="buyerPinInput" placeholder="預設 6666" class="w-full border border-slate-300 rounded px-2 py-1 font-mono text-xs">
-              <button type="button" onclick="saveRolePin('buyer')" class="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-[11px] font-bold shrink-0">儲存</button>
-            </div>
+            <label class="block text-[11px] font-bold text-purple-800 mb-1">管理員通行密碼：</label>
+            <input type="text" id="settingAdminPin" placeholder="預設 8888" class="w-full border border-purple-300 bg-purple-50/40 rounded-lg px-2.5 py-1.5 font-mono font-bold text-slate-800 focus:ring-1 focus:ring-purple-500 focus:outline-none">
           </div>
+        </div>
+        <div class="flex justify-end">
+          <button onclick="saveSystemPasswords()" class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+            <i class="fa-solid fa-floppy-disk mr-1"></i>儲存密碼設定
+          </button>
         </div>
       </div>
     </div>
@@ -692,10 +689,6 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 本機與雲端同步的驗證密碼預設值（無需 Firebase Authentication 登入）
-    let adminPinCode = "8888";
-    let buyerPinCode = "6666";
-
     // 即期品預警天數門檻
     const EXPIRING_SOON_DAYS = 90;
 
@@ -777,7 +770,10 @@
       { name: "王採購", role: "buyer" },
       { name: "系統管理員", role: "admin" }
     ];
-
+    let systemPasswords = {
+      buyer: "1234",
+      admin: "8888"
+    };
     let selectedAuditor = "李倉管";
     let currentRole = "warehouse";
     let isAdminVerified = false;
@@ -1127,18 +1123,6 @@
     }
 
     function initFirebaseListeners() {
-      db.ref('system_settings/adminPin').on('value', (snapshot) => {
-        if (snapshot.val()) adminPinCode = String(snapshot.val());
-        const input = document.getElementById('adminPinInput');
-        if (input) input.value = adminPinCode;
-      });
-
-      db.ref('system_settings/buyerPin').on('value', (snapshot) => {
-        if (snapshot.val()) buyerPinCode = String(snapshot.val());
-        const input = document.getElementById('buyerPinInput');
-        if (input) input.value = buyerPinCode;
-      });
-
       db.ref('system_settings/isGlobalLocked').on('value', (snapshot) => {
         isGlobalLocked = !!snapshot.val();
         const notice = document.getElementById('globalLockNotice');
@@ -1154,6 +1138,17 @@
         }
         updateAddOnSiteBtnVisibility();
         renderItemList();
+      });
+
+      // 監聽動態通行密碼設定
+      db.ref('system_settings/passwords').on('value', (snapshot) => {
+        const val = snapshot.val();
+        if (val && typeof val === 'object') {
+          systemPasswords = {
+            buyer: val.buyer ? String(val.buyer) : "1234",
+            admin: val.admin ? String(val.admin) : "8888"
+          };
+        }
       });
 
       db.ref('inventory_items').on('value', (snapshot) => {
@@ -1246,21 +1241,19 @@
 
       if (targetPerson.role === 'admin') {
         if (!isAdminVerified) {
-          const password = prompt(`【管理員身份驗證】切換至「${targetPerson.name}」需輸入管理員密碼：`, "");
-          if (password === null) {
-            document.getElementById('auditorSelect').value = selectedAuditor;
-            return;
-          }
-          if (password.trim() !== adminPinCode) {
+          const pin = prompt(`【管理員身份驗證】切換至「${targetPerson.name}」需輸入管理員通行密碼：`, "");
+          if (pin === systemPasswords.admin) {
+            isAdminVerified = true;
+            isBuyerVerified = false;
+            selectedAuditor = targetPerson.name;
+            currentRole = "admin";
+            localStorage.setItem('qc_selected_auditor', selectedAuditor);
+            alert("管理員身份驗證成功！已解鎖全權限與所有頁面切換功能。");
+          } else {
             alert("密碼錯誤！無法切換至管理員身份。");
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
-          isAdminVerified = true;
-          isBuyerVerified = false;
-          selectedAuditor = targetPerson.name;
-          currentRole = "admin";
-          localStorage.setItem('qc_selected_auditor', selectedAuditor);
         } else {
           selectedAuditor = targetPerson.name;
           currentRole = "admin";
@@ -1268,21 +1261,19 @@
         }
       } else if (targetPerson.role === 'buyer') {
         if (!isBuyerVerified) {
-          const password = prompt(`【採購身份驗證】切換至「${targetPerson.name}」需輸入採購人員密碼：`, "");
-          if (password === null) {
-            document.getElementById('auditorSelect').value = selectedAuditor;
-            return;
-          }
-          if (password.trim() !== buyerPinCode) {
+          const pin = prompt(`【採購身份驗證】切換至「${targetPerson.name}」需輸入採購人員密碼：`, "");
+          if (pin === systemPasswords.buyer) {
+            isBuyerVerified = true;
+            isAdminVerified = false;
+            selectedAuditor = targetPerson.name;
+            currentRole = "buyer";
+            localStorage.setItem('qc_selected_auditor', selectedAuditor);
+            alert("採購身份驗證成功！已進入採購人員模式。");
+          } else {
             alert("密碼錯誤！無法切換至採購人員身份。");
             document.getElementById('auditorSelect').value = selectedAuditor;
             return;
           }
-          isBuyerVerified = true;
-          isAdminVerified = false;
-          selectedAuditor = targetPerson.name;
-          currentRole = "buyer";
-          localStorage.setItem('qc_selected_auditor', selectedAuditor);
         } else {
           selectedAuditor = targetPerson.name;
           currentRole = "buyer";
@@ -1299,25 +1290,6 @@
       updateRoleUI();
       updateBatchActionBtns();
       renderItemList();
-    }
-
-    function saveRolePin(roleType) {
-      if (currentRole !== 'admin') return;
-      if (roleType === 'admin') {
-        const val = (document.getElementById('adminPinInput')?.value || '').trim();
-        if (!val) { alert('密碼不可為空白'); return; }
-        adminPinCode = val;
-        db.ref('system_settings/adminPin').set(val);
-        recordAuditLog(null, '修改管理員密碼', '已更新雲端管理員驗證密碼');
-        alert('管理員密碼已更新並同步至雲端！');
-      } else if (roleType === 'buyer') {
-        const val = (document.getElementById('buyerPinInput')?.value || '').trim();
-        if (!val) { alert('密碼不可為空白'); return; }
-        buyerPinCode = val;
-        db.ref('system_settings/buyerPin').set(val);
-        recordAuditLog(null, '修改採購人員密碼', '已更新雲端採購人員驗證密碼');
-        alert('採購人員密碼已更新並同步至雲端！');
-      }
     }
 
     function handleRoleSwitch(targetRole) {
@@ -1498,17 +1470,32 @@
     }
 
     function openPersonnelModal() {
-      if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單'); return; }
-      const adminInput = document.getElementById('adminPinInput');
-      const buyerInput = document.getElementById('buyerPinInput');
-      if (adminInput) adminInput.value = adminPinCode;
-      if (buyerInput) buyerInput.value = buyerPinCode;
+      if (currentRole !== 'admin') { alert('只有管理員可以管理人員名單與密碼'); return; }
       renderPersonnelList();
+      document.getElementById('settingBuyerPin').value = systemPasswords.buyer || '1234';
+      document.getElementById('settingAdminPin').value = systemPasswords.admin || '8888';
       document.getElementById('personnelModal').classList.remove('hidden');
     }
     function closePersonnelModal() {
       document.getElementById('personnelModal').classList.add('hidden');
       renderAuditorOptions();
+    }
+    function saveSystemPasswords() {
+      if (currentRole !== 'admin') return;
+      const buyerPin = (document.getElementById('settingBuyerPin').value || '').trim();
+      const adminPin = (document.getElementById('settingAdminPin').value || '').trim();
+
+      if (!buyerPin || !adminPin) {
+        alert('採購人員與管理員通行密碼皆不可為空白！');
+        return;
+      }
+
+      db.ref('system_settings/passwords').set({
+        buyer: buyerPin,
+        admin: adminPin
+      });
+      recordAuditLog(null, '更新系統通行密碼', '管理員已更新採購人員與管理員通行密碼');
+      alert('部門通行密碼已成功更新並同步至所有裝置！');
     }
     function renderPersonnelList() {
       const listEl = document.getElementById('personnelList');
@@ -3013,7 +3000,7 @@
       `;
     }
 
-    // 解析掃描結果：支援舊式 1D 單一料號條碼，以及新式 2D QR Code（產品編號|產品批號|有效日期|所屬公司）
+    // 解析掃描結果：支援舊式 1D 單一料號條碼，以及新式 2D QR Code（產品編號|產品批號|有效日期，亦向下相容舊版4欄含公司）
     function parseScannedPayload(rawText) {
       const text = (rawText || '').trim();
       if (!text) return null;
@@ -3138,6 +3125,124 @@
     }
 
     // =========================================================================
+    // Google 試算表「總表」製造商即時對照模組 (A欄: 產品代號 → P欄: 製造商)
+    // =========================================================================
+    const MANUFACTURER_SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/1C6Os7tQfcyq-VWRlHscFSPgf0-dqXYPxu4y6P2ahKUI/export?format=csv&gid=488323802';
+    let manufacturerLookupMap = {};
+    let manufacturerSyncState = 'idle'; // 'idle' | 'loading' | 'loaded' | 'error'
+
+    function updateManufacturerSyncBadge(statusText, badgeClass) {
+      const badge = document.getElementById('mfgSyncStatusBadge');
+      if (!badge) return;
+      badge.className = `text-[10px] px-1.5 py-0.2 rounded-full font-bold border ${badgeClass} hover:opacity-80 transition`;
+      badge.innerHTML = statusText;
+    }
+
+    async function fetchManufacturerSheetData(forceRefresh = false) {
+      if (manufacturerSyncState === 'loading') return;
+      if (manufacturerSyncState === 'loaded' && !forceRefresh) return;
+
+      manufacturerSyncState = 'loading';
+      updateManufacturerSyncBadge(
+        '<i class="fa-solid fa-spinner fa-spin mr-0.5"></i>同步總表中...',
+        'bg-amber-50 text-amber-800 border-amber-200'
+      );
+
+      try {
+        const fetchUrl = forceRefresh
+          ? `${MANUFACTURER_SHEET_CSV_URL}&_t=${Date.now()}`
+          : MANUFACTURER_SHEET_CSV_URL;
+        const response = await fetch(fetchUrl);
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const csvText = await response.text();
+
+        const workbook = XLSX.read(csvText, { type: 'string' });
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, raw: false, defval: '' });
+
+        const newMap = {};
+        let mappedCount = 0;
+
+        for (let r = 1; r < rows.length; r++) {
+          const row = rows[r];
+          if (!row || row.length === 0) continue;
+
+          // A 欄 (index 0): 產品代號, P 欄 (index 15): 製造商
+          const rawSkuCell = String(row[0] ?? '').replace(/[\u200B-\u200D\uFEFF]/g, '').trim();
+          const rawMfgCell = String(row[15] ?? '').replace(/[\u200B-\u200D\uFEFF]/g, '').replace(/\r?\n+/g, ' ').replace(/\s{2,}/g, ' ').trim();
+
+          if (!rawSkuCell || !rawMfgCell) continue;
+
+          // 支援單一儲存格包含換行多組代號，並移除括號備註（如 0488025(未照射)）
+          const skuTokens = rawSkuCell
+            .split(/[\r\n、,;\/]+/)
+            .map(token => token.replace(/\([^)]*\)/g, '').replace(/（[^）]*）/g, '').trim())
+            .filter(Boolean);
+
+          skuTokens.forEach(code => {
+            const normKey = code.toUpperCase();
+            if (!newMap[normKey]) {
+              newMap[normKey] = rawMfgCell;
+              mappedCount++;
+            }
+          });
+        }
+
+        manufacturerLookupMap = newMap;
+        manufacturerSyncState = 'loaded';
+        updateManufacturerSyncBadge(
+          `<i class="fa-solid fa-circle-check mr-0.5"></i>總表已連線 (${mappedCount}筆)`,
+          'bg-emerald-50 text-emerald-800 border-emerald-200'
+        );
+
+        // 若當前已有輸入產品編號，自動套用對應製造商
+        const currentSku = (document.getElementById('lblSku')?.value || '').trim();
+        if (currentSku) {
+          applyManufacturerBySku(currentSku, false);
+        }
+      } catch (err) {
+        console.error('讀取 Google 試算表製造商失敗:', err);
+        manufacturerSyncState = 'error';
+        updateManufacturerSyncBadge(
+          '<i class="fa-solid fa-triangle-exclamation mr-0.5"></i>連線失敗(重試)',
+          'bg-rose-50 text-rose-800 border-rose-200'
+        );
+      }
+    }
+
+    function applyManufacturerBySku(skuValue, showNotFoundHint = false) {
+      const cleanKey = (skuValue || '').replace(/\([^)]*\)/g, '').replace(/（[^）]*）/g, '').trim().toUpperCase();
+      const hintEl = document.getElementById('mfgLookupResultHint');
+      const mfgInput = document.getElementById('lblManufacturer');
+      if (!mfgInput) return;
+
+      if (!cleanKey) {
+        if (hintEl) hintEl.innerHTML = '';
+        return;
+      }
+
+      const matchedMfg = manufacturerLookupMap[cleanKey];
+      if (matchedMfg) {
+        mfgInput.value = matchedMfg;
+        if (hintEl) {
+          hintEl.innerHTML = `<span class="text-emerald-700 font-bold"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>已從總表自動帶入製造商</span>`;
+        }
+        renderLabelPreview();
+      } else if (manufacturerSyncState === 'loaded' && showNotFoundHint) {
+        if (hintEl) {
+          hintEl.innerHTML = `<span class="text-slate-500"><i class="fa-solid fa-circle-info mr-1"></i>總表查無此代號之製造商資料，可手動填寫</span>`;
+        }
+      } else if (hintEl) {
+        hintEl.innerHTML = '';
+      }
+    }
+
+    function handleLabelSkuChange(skuVal) {
+      applyManufacturerBySku(skuVal, true);
+      renderLabelPreview();
+    }
+
+    // =========================================================================
     // 管理員專用：10×10 cm 正方形 QR Code 出貨標籤產生與列印模組
     // =========================================================================
     let labelPrintQueue = [];
@@ -3152,6 +3257,7 @@
         alert('權限不足！只有通過管理員密碼驗證的「管理員」才能使用出貨標籤產生與列印系統。');
         return;
       }
+      fetchManufacturerSheetData(false);
       populateLabelInventorySelect();
       if (!document.getElementById('lblSku').value && !document.getElementById('lblName').value) {
         loadSampleLabelPreset();
@@ -3168,6 +3274,7 @@
         alert('權限不足！只有管理員可使用此功能。');
         return;
       }
+      fetchManufacturerSheetData(false);
       populateLabelInventorySelect();
       const sel = document.getElementById('labelInventorySelect');
       if (sel) sel.value = itemId;
@@ -3237,6 +3344,9 @@
         document.getElementById('lblAddress').value = '臺北市南港區八德路四段778號4樓';
         document.getElementById('lblPhone').value = '(02)2788-6279';
       }
+      // 透過產品代號比對 Google 試算表總表帶入製造商
+      document.getElementById('lblManufacturer').value = '';
+      applyManufacturerBySku(item.sku || '', true);
       renderLabelPreview();
     }
 
@@ -3255,6 +3365,7 @@
       document.getElementById('lblPhone').value = '(02)2788-6279';
       document.getElementById('lblOrigin').value = '秘魯';
       document.getElementById('lblRemark').value = '非供即食，烹煮條件依加工廠條件而訂';
+      applyManufacturerBySku('0099008', false);
       renderLabelPreview();
     }
 
@@ -3266,8 +3377,8 @@
       const expNorm = normalizeDateString(rawExp) || rawExp;
       const company = (document.getElementById('lblCompany')?.value || '').trim();
 
-      // 結構化 QR Code 編碼：產品編號|產品批號|有效日期(YYYY-MM-DD供盤點系統比對)|所屬公司
-      const qrPayload = `${sku}|${batchNo}|${expNorm}|${company}`;
+      // 結構化 QR Code 編碼：產品編號|產品批號|有效日期 (已將原本的公司欄位替換為有效日期)
+      const qrPayload = `${sku}|${batchNo}|${expNorm}`;
 
       // 讀取顯示項目勾選狀態
       const isFieldChecked = (key) => {
@@ -4169,25 +4280,24 @@
             String(expStr),
             String(item.location || ''),
             String(item.looseLocation || ''),
-            round4(item.systemQty ?? 0),
+            Number(item.systemQty ?? 0),
             warehouseTotal,
             finalActual,
             diff,
             String(item.unit || ''),
             String(item.buyerNote || ''),
-            item.lockedByBuyer ? '是' : '否'
+            item.lockedByBuyer ? '已盤點(已鎖定)' : '待鎖定'
           ];
         });
       } else {
-        roleFilePrefix = '年度庫存盤點總表';
+        roleFilePrefix = '管理員完整盤點總表';
         headers = [
           '產品編號', '產品品名', '類別', '所屬公司', '產品批號', '有效日期',
-          '完整貨儲存地點', '散貨儲存地點',
-          '帳面數量', '完整貨數量', '散貨數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
+          '完整貨儲存地點', '散貨儲存地點', '帳面數量', '完整貨數量', '散貨數量', '倉管初盤總數', '正式實盤數量', '盤差', '單位',
           '初盤狀態', '初盤人員', '初盤時間',
-          '包裝是否完好', '是否有散貨', '品質(包裝樣式/顏色/風味/流動性)正常',
-          '品管檢查狀態', '整體品質性狀', '異常處置方式', '品管檢查人員', '品管檢查時間', '品管備註', '是否有照片',
-          '採購覆核說明', '已盤點(採購鎖定)'
+          '包裝是否完好', '是否有散貨', '品質(包裝樣式/顏色/風味/流動性)正常', '採購覆核說明',
+          '已盤點(採購鎖定)', '品管檢查狀態', '整體品質性狀', '異常處置方式', '品管備註',
+          '品管檢查人員', '品管檢查時間', '是否有照片'
         ];
         if (includeLogs) headers.push('變更紀錄次數');
 
@@ -4198,9 +4308,7 @@
           const finalActual = getFinalActualQty(item);
           const diff = calcDiscrepancy(finalActual, item.systemQty);
           const expStr = normalizeDateString(item.expDate) || item.expDate || '';
-          const logCount = logCountByItem[item.id] || 0;
-
-          const rowCols = [
+          const rowArr = [
             String(item.sku || ''),
             String(item.name || ''),
             String(item.category || ''),
@@ -4209,7 +4317,7 @@
             String(expStr),
             String(item.location || ''),
             String(item.looseLocation || ''),
-            round4(item.systemQty ?? 0),
+            Number(item.systemQty ?? 0),
             intactQty,
             looseQty,
             warehouseTotal,
@@ -4222,222 +4330,198 @@
             String(item.pkgIntact || '未判定'),
             String(item.hasLooseStock || '未判定'),
             String(item.qualityCheck || '未判定'),
+            String(item.buyerNote || ''),
+            item.lockedByBuyer ? '已盤點(已鎖定)' : '待鎖定',
             item.audited ? '已檢查' : '待檢查',
             item.condition === 'normal' ? '正常' : item.condition === 'abnormal' ? '異常' : '未判定',
             String(item.abnormalAction || ''),
+            String(item.note || ''),
             String(item.auditor || ''),
             String(item.auditTime || ''),
-            String(item.note || ''),
-            item.photo ? '是' : '否',
-            String(item.buyerNote || ''),
-            item.lockedByBuyer ? '是' : '否'
+            item.photo ? '是' : '否'
           ];
-          if (includeLogs) rowCols.push(logCount);
-          return rowCols;
+          if (includeLogs) {
+            rowArr.push(logCountByItem[item.id] || 0);
+          }
+          return rowArr;
         });
       }
 
       const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      // 強制將「產品編號 (第0欄)」、「產品批號 (第4欄)」、「有效日期 (第5欄)」設為文字格式 '@'，保留補零
-      const textColIndices = [0, 4, 5];
+      // 強制將「產品編號 (第0欄)」與「產品批號 (第4欄)」設為文字格式 '@'，避免前導 0 遺失
       for (let r = 1; r <= rows.length; r++) {
-        textColIndices.forEach(c => {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          if (ws[cellRef]) {
-            ws[cellRef].t = 's';
-            ws[cellRef].z = '@';
+        [0, 4].forEach(c => {
+          const cellAddr = XLSX.utils.encode_cell({ r, c });
+          if (ws[cellAddr]) {
+            ws[cellAddr].t = 's';
+            ws[cellAddr].z = '@';
           }
         });
       }
-      ws['!cols'] = headers.map((h, idx) => ({ wch: idx === 1 ? 26 : (idx === 0 || idx === 4 ? 16 : 14) }));
+
+      ws['!cols'] = headers.map((h, idx) => {
+        if (idx === 1) return { wch: 28 };
+        if (idx === 0 || idx === 4 || idx === 6 || idx === 7) return { wch: 16 };
+        return { wch: Math.max(12, h.length * 2 + 2) };
+      });
 
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, roleFilePrefix.slice(0, 31));
+      XLSX.utils.book_append_sheet(wb, ws, '盤點報表');
 
       const compTag = selectedComp === 'all' ? '全部公司' : selectedComp;
       const catTag = selectedCat === 'all' ? '全部類別' : selectedCat;
-      XLSX.writeFile(wb, `${roleFilePrefix}_${compTag}_${catTag}_${new Date().toISOString().slice(0,10)}.xlsx`);
+      const dateTag = new Date().toISOString().slice(0, 10);
+      const fileName = `${roleFilePrefix}_${compTag}_${catTag}_${dateTag}.xlsx`;
 
-      recordAuditLog(null, '匯出盤點報表', `格式：${roleFilePrefix} (.xlsx) / 篩選：${compTag} · ${catTag} (共 ${items.length} 筆)`);
+      XLSX.writeFile(wb, fileName);
+      recordAuditLog(null, '匯出盤點報表 (.xlsx)', `匯出「${roleFilePrefix}」(${compTag} / ${catTag})，共 ${items.length} 筆`);
       closeExportModal();
     }
 
-    // 下載標準匯入範例檔 (.xlsx，產品編號與批號設為文字格式以保留開頭補零)
+    // 下載原生 Excel (.xlsx) 標準範例檔，產品編號與批號強制設定為文字格式以保留開頭 0
     function downloadSampleExcel() {
       const headers = ['產品編號', '產品品名', '產品批號', '有效日期', '數量', '單位', '倉庫', '所屬公司', '類別'];
-      const rows = [
-        ['0099008', '香草酒香料', 'BF1100106', '2028-11-05', 4, 'KG', '081', '佳津', '原料'],
-        ['0012002', '鋁箔立袋(500g)', '202603', '2029-12-31', 1200, 'PCS', '1F倉庫(前)', '總公司', '包材']
+      const sampleRows = [
+        ['0012005', '特級冷壓橄欖油 (5L)', 'LOT-20260401', '2027-04-01', 120, '桶', '1F成品區', '佳津貿易', '成品'],
+        ['0023008', '有機非基改黃豆 (25kg)', 'B-99023', '2026-10-15', 45, '袋', '1F原料區', '宸品食品', '原料'],
+        ['0058012', '食品級立式夾鏈袋 (100入)', 'PKG-8821', '', 300, '包', '2F倉庫(前)(E區)', '佳津貿易', '包材']
       ];
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-      [0, 2, 3].forEach(c => {
-        for (let r = 1; r <= rows.length; r++) {
-          const cellRef = XLSX.utils.encode_cell({ r, c });
-          if (ws[cellRef]) { ws[cellRef].t = 's'; ws[cellRef].z = '@'; }
-        }
-      });
-      ws['!cols'] = [{ wch: 14 }, { wch: 24 }, { wch: 16 }, { wch: 14 }, { wch: 10 }, { wch: 8 }, { wch: 14 }, { wch: 12 }, { wch: 10 }];
+
+      const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleRows]);
+      for (let r = 1; r <= sampleRows.length; r++) {
+        [0, 2, 3].forEach(c => {
+          const cellAddr = XLSX.utils.encode_cell({ r, c });
+          if (ws[cellAddr]) {
+            ws[cellAddr].t = 's';
+            ws[cellAddr].z = '@';
+          }
+        });
+      }
+      ws['!cols'] = [
+        { wch: 14 }, { wch: 28 }, { wch: 16 }, { wch: 14 },
+        { wch: 10 }, { wch: 8 }, { wch: 18 }, { wch: 14 }, { wch: 10 }
+      ];
+
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '盤點主檔匯入範例');
-      XLSX.writeFile(wb, '盤點主檔匯入範例.xlsx');
+      XLSX.utils.book_append_sheet(wb, ws, '庫存主檔範例');
+      XLSX.writeFile(wb, '盤點庫存主檔匯入範例.xlsx');
     }
   </script>
-  <!-- 管理員專用：10×10cm QR Code 出貨標籤列印中心 Modal -->
-  <div id="labelStudioModal" class="fixed inset-0 bg-black/65 z-50 hidden flex items-center justify-center p-2 sm:p-4">
-    <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
-      <!-- 頂部標題列 -->
+
+  <!-- 管理員專用：10×10 cm 正方形 QR Code 出貨標籤產生與列印工作室 Modal -->
+  <div id="labelStudioModal" class="fixed inset-0 bg-black/75 z-50 hidden flex items-center justify-center p-2 sm:p-4">
+    <div class="bg-white rounded-xl max-w-5xl w-full max-h-[94vh] flex flex-col shadow-2xl overflow-hidden">
       <div class="flex justify-between items-center px-4 py-3 bg-purple-950 text-white shrink-0">
         <div class="flex items-center gap-2">
           <i class="fa-solid fa-qrcode text-amber-400 text-lg"></i>
           <div>
-            <h3 class="font-bold text-base leading-tight">出貨標籤產生與列印系統 (10 × 10 cm 正方形規格)</h3>
-            <p class="text-[11px] text-purple-200">管理員專屬權限 · QR Code 鎖定 1:1 正方形比例 · 日期格式 YYYY/MM/DD</p>
+            <h3 class="font-bold text-sm sm:text-base leading-tight">管理員專用：10×10 cm 正方形 QR Code 出貨標籤系統</h3>
+            <p class="text-[11px] text-purple-200">自動生成結構化正方形 QR Code（含產品編號、批號、有效日期）供現場掃碼盤點</p>
           </div>
         </div>
-        <button onclick="closeLabelStudioModal()" class="text-white/70 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
+        <button type="button" onclick="closeLabelStudioModal()" class="text-white/70 hover:text-white p-1"><i class="fa-solid fa-xmark text-xl"></i></button>
       </div>
 
-      <!-- 主內容雙欄區 -->
-      <div class="flex-1 overflow-y-auto p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 bg-slate-100">
-        <!-- 左側：資料選擇與標籤欄位編輯 (7欄) -->
+      <div class="flex-1 overflow-y-auto p-3 sm:p-4 grid grid-cols-1 lg:grid-cols-12 gap-4 bg-slate-100">
+        <!-- 左側：標籤資料輸入表單 (7欄) -->
         <div class="lg:col-span-7 space-y-3">
-          <!-- 從現有庫存主檔快速帶入 -->
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2">
-            <label class="block text-xs font-bold text-purple-900">
-              <i class="fa-solid fa-database mr-1"></i>從雲端庫存主檔快速帶入品項：
-            </label>
-            <div class="flex gap-2">
-              <select id="labelInventorySelect" onchange="handleLabelInventorySelect(this.value)" class="flex-1 border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs font-medium bg-slate-50 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                <option value="">-- 選擇現有庫存品項自動帶入 (或下方手動輸入) --</option>
-              </select>
-              <button type="button" onclick="loadSampleLabelPreset()" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-100 text-amber-900 hover:bg-amber-200 shrink-0" title="載入佳津紅藜麥範例">
-                載入範例
-              </button>
+          <!-- 快速帶入現有庫存品項 -->
+          <div class="bg-white p-3 rounded-xl border border-purple-200 shadow-sm space-y-2">
+            <div class="flex items-center justify-between gap-2">
+              <label class="text-xs font-bold text-purple-900"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i>從現有庫存主檔帶入資料：</label>
+              <button type="button" onclick="loadSampleLabelPreset()" class="text-[11px] text-indigo-600 hover:text-indigo-800 font-semibold underline">帶入「紅藜麥」範例</button>
             </div>
+            <select id="labelInventorySelect" onchange="handleLabelInventorySelect(this.value)" class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-slate-50 font-medium text-slate-800 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              <option value="">-- 選擇現有庫存品項自動帶入 --</option>
+            </select>
           </div>
 
-          <!-- 勾選要顯示在標籤上的欄位 -->
-          <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs">
-            <div class="flex items-center justify-between border-b pb-1.5">
-              <span class="font-bold text-indigo-900"><i class="fa-solid fa-sliders text-indigo-600 mr-1"></i>勾選標籤顯示項目 (取消勾選即隱藏該列)：</span>
-              <div class="flex items-center gap-2 text-[11px]">
-                <button type="button" onclick="toggleAllLabelFields(true)" class="text-indigo-600 hover:underline font-semibold">全選</button>
-                <span class="text-slate-300">|</span>
-                <button type="button" onclick="toggleAllLabelFields(false)" class="text-slate-500 hover:underline font-semibold">僅留必填</button>
-              </div>
-            </div>
-            <div class="grid grid-cols-3 sm:grid-cols-4 gap-1.5 text-[11px]">
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_name" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">品名</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_ingredient" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">成分</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_weight" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">淨重</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_batch" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">批號</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_mfgDate" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">製造日期</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_expDate" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">有效日期</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_sku" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">料號字樣</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_company" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">[公司]標籤</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_manufacturer" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">製造廠商</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_distributor" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">銷售商</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_address" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">地址</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_phone" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">電話</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_origin" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">原產地</span>
-              </label>
-              <label class="flex items-center gap-1.5 cursor-pointer select-none bg-slate-50 px-2 py-1 rounded border border-slate-200">
-                <input type="checkbox" id="chkShow_remark" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded">
-                <span class="font-semibold text-slate-700">備註</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- 標籤內容編輯表單 -->
+          <!-- 標籤欄位明細 -->
           <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2.5 text-xs">
             <div class="font-bold text-slate-800 border-b pb-1.5 flex items-center justify-between">
-              <span><i class="fa-solid fa-pen-to-square text-purple-600 mr-1"></i>標籤內容與條碼欄位設定</span>
-              <span class="text-[11px] font-mono text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200">日期顯示：YYYY/MM/DD</span>
+              <span><i class="fa-solid fa-pen-to-square text-purple-600 mr-1"></i>標籤內容編輯 (即時預覽同步)</span>
+              <span class="text-[10px] text-slate-400 font-normal">尺寸規格：100mm × 100mm (10×10 cm)</span>
+            </div>
+
+            <!-- 勾選控制：自選標籤上要列印顯示的項目 -->
+            <div class="bg-slate-50 border border-slate-200 rounded-lg p-2 space-y-1.5">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-slate-700"><i class="fa-solid fa-list-check text-purple-600 mr-1"></i>勾選標籤上要列印顯示的項目：</span>
+                <div class="flex items-center gap-2 text-[10px]">
+                  <button type="button" onclick="toggleAllLabelFields(true)" class="text-indigo-600 hover:underline font-bold">全選</button>
+                  <span class="text-slate-300">|</span>
+                  <button type="button" onclick="toggleAllLabelFields(false)" class="text-slate-600 hover:underline font-semibold">僅留必填</button>
+                </div>
+              </div>
+              <div class="grid grid-cols-3 sm:grid-cols-5 gap-x-2 gap-y-1 text-[11px] text-slate-700">
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_name" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 品名</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_ingredient" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 成分</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_weight" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 淨重</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_batch" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 批號</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_mfgDate" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 製造日期</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_expDate" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 有效日期</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_sku" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> QR料號</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_company" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> QR公司</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_manufacturer" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 製造廠商</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_distributor" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 銷售商</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_address" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 地址</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_phone" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 電話</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_origin" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 原產地</label>
+                <label class="inline-flex items-center gap-1 cursor-pointer"><input type="checkbox" id="chkShow_remark" checked onchange="renderLabelPreview()" class="rounded text-purple-600"> 備註</label>
+              </div>
             </div>
 
             <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
               <div>
-                <label class="block font-bold text-slate-700 mb-0.5">產品編號 (寫入QR) <span class="text-rose-600">*</span>：</label>
-                <input type="text" id="lblSku" oninput="renderLabelPreview()" placeholder="如 0099008" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                <label class="block font-bold text-slate-700 mb-0.5">產品編號 (寫入QR·帶製造商) <span class="text-rose-600">*</span>：</label>
+                <input type="text" id="lblSku" oninput="handleLabelSkuChange(this.value)" placeholder="如 0099008" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
               <div>
-                <label class="block font-bold text-slate-700 mb-0.5">產品批號 (寫入QR)：</label>
-                <input type="text" id="lblBatch" oninput="renderLabelPreview()" placeholder="如 3685-260126QR" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                <label class="block font-bold text-slate-700 mb-0.5">產品批號 (寫入QR) <span class="text-rose-600">*</span>：</label>
+                <input type="text" id="lblBatch" oninput="renderLabelPreview()" placeholder="如 3685-260126QR" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
               <div class="col-span-2 sm:col-span-1">
-                <label class="block font-bold text-slate-700 mb-0.5">所屬公司 (寫入QR)：</label>
+                <label class="block font-bold text-slate-700 mb-0.5">所屬公司 (僅顯示於標籤)：</label>
                 <input type="text" id="lblCompany" oninput="renderLabelPreview()" placeholder="如 佳津" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
-              <div class="col-span-2">
-                <label class="block font-bold text-slate-700 mb-0.5">品名 <span class="text-rose-600">*</span>：</label>
-                <input type="text" id="lblName" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">淨重 / 規格：</label>
-                <input type="text" id="lblWeight" oninput="renderLabelPreview()" placeholder="如 25公斤" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-              </div>
-            </div>
-
-            <div class="grid grid-cols-3 gap-2">
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">成分：</label>
-                <input type="text" id="lblIngredient" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">製造日期：</label>
-                <input type="text" id="lblMfgDate" oninput="renderLabelPreview()" placeholder="如 2026/01/26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
-              </div>
-              <div>
-                <label class="block font-bold text-slate-700 mb-0.5">有效日期 (寫入QR)：</label>
-                <input type="text" id="lblExpDate" oninput="renderLabelPreview()" placeholder="如 2029/01/26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
             </div>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
               <div>
-                <label class="block font-bold text-slate-700 mb-0.5">製造廠商：</label>
-                <input type="text" id="lblManufacturer" oninput="renderLabelPreview()" placeholder="製造廠商名稱..." class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                <label class="block font-bold text-slate-700 mb-0.5">品名 <span class="text-rose-600">*</span>：</label>
+                <input type="text" id="lblName" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">成分：</label>
+                <input type="text" id="lblIngredient" oninput="renderLabelPreview()" placeholder="如 紅藜麥" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">淨重：</label>
+                <input type="text" id="lblWeight" oninput="renderLabelPreview()" placeholder="如 25公斤" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">製造日期 (YYYY/MM/DD)：</label>
+                <input type="text" id="lblMfgDate" oninput="renderLabelPreview()" placeholder="2026/01/26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">有效日期 (YYYY/MM/DD)：</label>
+                <input type="text" id="lblExpDate" oninput="renderLabelPreview()" placeholder="2029/01/26" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 font-mono focus:ring-1 focus:ring-purple-500 focus:outline-none">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <div class="flex items-center justify-between gap-1 mb-0.5">
+                  <label class="font-bold text-slate-700">製造廠商 (依代號自動帶入)：</label>
+                  <button type="button" onclick="fetchManufacturerSheetData(true)" id="mfgSyncStatusBadge" class="text-[10px] px-1.5 py-0.2 rounded-full font-bold border bg-slate-100 text-slate-600 border-slate-300 hover:opacity-80 transition" title="點擊重新同步 Google 試算表總表">
+                    <i class="fa-solid fa-rotate mr-0.5"></i>同步總表
+                  </button>
+                </div>
+                <input type="text" id="lblManufacturer" oninput="renderLabelPreview()" placeholder="輸入產品編號自動帶入或手動輸入..." class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
+                <div id="mfgLookupResultHint" class="text-[10px] mt-0.5 min-h-[14px]"></div>
               </div>
               <div>
                 <label class="block font-bold text-slate-700 mb-0.5">銷售商全銜：</label>
@@ -4447,111 +4531,106 @@
 
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div class="sm:col-span-2">
-                <label class="block font-bold text-slate-700 mb-0.5">銷售商地址：</label>
+                <label class="block font-bold text-slate-700 mb-0.5">地址：</label>
                 <input type="text" id="lblAddress" oninput="renderLabelPreview()" placeholder="如 臺北市南港區八德路四段778號4樓" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
               <div>
-                <label class="block font-bold text-slate-700 mb-0.5">電話 / 原產地：</label>
-                <div class="flex gap-1">
-                  <input type="text" id="lblPhone" oninput="renderLabelPreview()" placeholder="電話" class="w-3/5 border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                  <input type="text" id="lblOrigin" oninput="renderLabelPreview()" placeholder="原產地" class="w-2/5 border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
+                <label class="block font-bold text-slate-700 mb-0.5">電話：</label>
+                <input type="text" id="lblPhone" oninput="renderLabelPreview()" placeholder="如 (02)2788-6279" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
             </div>
 
-            <div>
-              <label class="block font-bold text-slate-700 mb-0.5">備註標示：</label>
-              <input type="text" id="lblRemark" oninput="renderLabelPreview()" placeholder="如 非供即食，烹煮條件依加工廠條件而訂" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
-            </div>
-
-            <!-- 預設 4 組自訂額外欄位區塊 -->
-            <div class="pt-2 border-t border-slate-200 space-y-1.5">
-              <div class="flex items-center justify-between">
-                <span class="font-bold text-purple-900"><i class="fa-solid fa-plus-circle text-purple-600 mr-1"></i>自訂額外欄位 (預設 4 組，可勾選顯示、自訂標題與內容)：</span>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div>
+                <label class="block font-bold text-slate-700 mb-0.5">原產地：</label>
+                <input type="text" id="lblOrigin" oninput="renderLabelPreview()" placeholder="如 秘魯" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
-              <div class="space-y-1.5">
-                <div class="flex items-center gap-1.5 bg-purple-50/60 p-1.5 rounded-lg border border-purple-200/80">
-                  <input type="checkbox" id="lblCustomShow_1" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded shrink-0" title="勾選顯示此欄位">
-                  <input type="text" id="lblCustomKey_1" oninput="renderLabelPreview()" placeholder="自訂標題1 (如: 過敏原)" class="w-1/3 border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                  <input type="text" id="lblCustomVal_1" oninput="renderLabelPreview()" placeholder="自訂內容1 (如: 本產品含有麩質穀物)" class="flex-1 border border-slate-300 bg-white rounded px-2 py-1 text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div class="flex items-center gap-1.5 bg-purple-50/60 p-1.5 rounded-lg border border-purple-200/80">
-                  <input type="checkbox" id="lblCustomShow_2" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded shrink-0" title="勾選顯示此欄位">
-                  <input type="text" id="lblCustomKey_2" oninput="renderLabelPreview()" placeholder="自訂標題2 (如: 保存條件)" class="w-1/3 border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                  <input type="text" id="lblCustomVal_2" oninput="renderLabelPreview()" placeholder="自訂內容2 (如: 請置於陰涼乾燥處)" class="flex-1 border border-slate-300 bg-white rounded px-2 py-1 text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div class="flex items-center gap-1.5 bg-purple-50/60 p-1.5 rounded-lg border border-purple-200/80">
-                  <input type="checkbox" id="lblCustomShow_3" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded shrink-0" title="勾選顯示此欄位">
-                  <input type="text" id="lblCustomKey_3" oninput="renderLabelPreview()" placeholder="自訂標題3 (如: 食品添加物)" class="w-1/3 border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                  <input type="text" id="lblCustomVal_3" oninput="renderLabelPreview()" placeholder="自訂內容3 (如: 無)" class="flex-1 border border-slate-300 bg-white rounded px-2 py-1 text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
-                <div class="flex items-center gap-1.5 bg-purple-50/60 p-1.5 rounded-lg border border-purple-200/80">
-                  <input type="checkbox" id="lblCustomShow_4" checked onchange="renderLabelPreview()" class="accent-purple-700 rounded shrink-0" title="勾選顯示此欄位">
-                  <input type="text" id="lblCustomKey_4" oninput="renderLabelPreview()" placeholder="自訂標題4 (如: 客戶案號)" class="w-1/3 border border-slate-300 bg-white rounded px-2 py-1 text-xs font-bold focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                  <input type="text" id="lblCustomVal_4" oninput="renderLabelPreview()" placeholder="自訂內容4" class="flex-1 border border-slate-300 bg-white rounded px-2 py-1 text-xs focus:ring-1 focus:ring-purple-500 focus:outline-none">
-                </div>
+              <div class="sm:col-span-2">
+                <label class="block font-bold text-slate-700 mb-0.5">備註警語：</label>
+                <input type="text" id="lblRemark" oninput="renderLabelPreview()" placeholder="如 非供即食，烹煮條件依加工廠條件而訂" class="w-full border border-slate-300 rounded-lg px-2 py-1.5 focus:ring-1 focus:ring-purple-500 focus:outline-none">
               </div>
             </div>
 
-            <!-- QR 編碼字串即時顯示 -->
-            <div class="bg-slate-900 text-emerald-400 rounded-lg p-2 font-mono text-[11px] flex items-center justify-between gap-2">
-              <span class="truncate"><span class="text-slate-400">QR 寫入內容：</span><strong id="lblQrPayloadPreview">0099008|3685-260126QR|2029-01-26|佳津</strong></span>
-              <span class="text-[10px] bg-emerald-950 text-emerald-300 border border-emerald-700 px-1.5 py-0.5 rounded shrink-0">1:1 正方形鎖定</span>
+            <!-- 4 組自訂額外欄位 -->
+            <div class="bg-purple-50/50 border border-purple-200 rounded-lg p-2 space-y-1.5">
+              <div class="text-[11px] font-bold text-purple-900 flex items-center justify-between">
+                <span><i class="fa-solid fa-plus-circle text-purple-600 mr-1"></i>自訂額外欄位 (最多 4 項，有填寫且勾選即顯示於標籤)：</span>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <div class="flex items-center gap-1 bg-white p-1 rounded border border-slate-200">
+                  <input type="checkbox" id="lblCustomShow_1" checked onchange="renderLabelPreview()" class="rounded text-purple-600 shrink-0" title="勾選顯示">
+                  <input type="text" id="lblCustomKey_1" oninput="renderLabelPreview()" placeholder="欄位1名稱(如:保存條件)" class="w-24 border border-slate-200 rounded px-1.5 py-1 text-[11px] font-bold focus:outline-none">
+                  <input type="text" id="lblCustomVal_1" oninput="renderLabelPreview()" placeholder="內容(如:常溫陰涼處)" class="flex-1 min-w-0 border border-slate-200 rounded px-1.5 py-1 text-[11px] focus:outline-none">
+                </div>
+                <div class="flex items-center gap-1 bg-white p-1 rounded border border-slate-200">
+                  <input type="checkbox" id="lblCustomShow_2" checked onchange="renderLabelPreview()" class="rounded text-purple-600 shrink-0" title="勾選顯示">
+                  <input type="text" id="lblCustomKey_2" oninput="renderLabelPreview()" placeholder="欄位2名稱(如:過敏原)" class="w-24 border border-slate-200 rounded px-1.5 py-1 text-[11px] font-bold focus:outline-none">
+                  <input type="text" id="lblCustomVal_2" oninput="renderLabelPreview()" placeholder="內容" class="flex-1 min-w-0 border border-slate-200 rounded px-1.5 py-1 text-[11px] focus:outline-none">
+                </div>
+                <div class="flex items-center gap-1 bg-white p-1 rounded border border-slate-200">
+                  <input type="checkbox" id="lblCustomShow_3" checked onchange="renderLabelPreview()" class="rounded text-purple-600 shrink-0" title="勾選顯示">
+                  <input type="text" id="lblCustomKey_3" oninput="renderLabelPreview()" placeholder="欄位3名稱(如:進口商)" class="w-24 border border-slate-200 rounded px-1.5 py-1 text-[11px] font-bold focus:outline-none">
+                  <input type="text" id="lblCustomVal_3" oninput="renderLabelPreview()" placeholder="內容" class="flex-1 min-w-0 border border-slate-200 rounded px-1.5 py-1 text-[11px] focus:outline-none">
+                </div>
+                <div class="flex items-center gap-1 bg-white p-1 rounded border border-slate-200">
+                  <input type="checkbox" id="lblCustomShow_4" checked onchange="renderLabelPreview()" class="rounded text-purple-600 shrink-0" title="勾選顯示">
+                  <input type="text" id="lblCustomKey_4" oninput="renderLabelPreview()" placeholder="欄位4名稱(如:客戶名稱)" class="w-24 border border-slate-200 rounded px-1.5 py-1 text-[11px] font-bold focus:outline-none">
+                  <input type="text" id="lblCustomVal_4" oninput="renderLabelPreview()" placeholder="內容" class="flex-1 min-w-0 border border-slate-200 rounded px-1.5 py-1 text-[11px] focus:outline-none">
+                </div>
+              </div>
             </div>
           </div>
 
-          <!-- 待列印佇列 (支援多張批量列印) -->
+          <!-- 批量列印佇列控制列 -->
           <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm space-y-2 text-xs">
-            <div class="flex items-center justify-between">
-              <span class="font-bold text-slate-800"><i class="fa-solid fa-layer-group text-indigo-600 mr-1"></i>批量待列印清單 (<span id="labelQueueCount">0</span> 張)</span>
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <span class="font-bold text-slate-700"><i class="fa-solid fa-layer-group text-amber-600 mr-1"></i>批量列印佇列 (<span id="labelQueueCount" class="text-purple-700 font-black">0</span> 張)：</span>
               <div class="flex items-center gap-1.5">
-                <input type="number" id="lblCopyCount" value="1" min="1" max="50" class="w-14 border border-slate-300 rounded px-1.5 py-1 text-center font-bold" title="張數">
-                <button type="button" onclick="addCurrentLabelToQueue()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-2.5 py-1 rounded-lg font-bold transition">
+                <label class="text-slate-600">張數：</label>
+                <input type="number" id="lblCopyCount" value="1" min="1" max="50" class="w-14 border border-slate-300 rounded px-1.5 py-1 text-center font-bold">
+                <button type="button" onclick="addCurrentLabelToQueue()" class="bg-purple-700 hover:bg-purple-800 text-white px-2.5 py-1 rounded-lg font-bold transition">
                   <i class="fa-solid fa-plus mr-1"></i>加入佇列
                 </button>
-                <button type="button" onclick="clearLabelQueue()" class="text-slate-500 hover:text-rose-600 px-1.5 py-1" title="清空佇列">
-                  <i class="fa-solid fa-trash-can"></i>
-                </button>
+                <button type="button" onclick="clearLabelQueue()" class="text-slate-500 hover:text-rose-600 px-2 py-1 text-[11px] underline">清空</button>
               </div>
             </div>
-            <div id="labelQueueList" class="max-h-28 overflow-y-auto divide-y divide-slate-100 text-[11px]">
-              <div class="text-slate-400 py-2 text-center">尚無加入佇列的標籤，可直接點擊右側「立即列印此張」或先加入多張批量列印</div>
-            </div>
+            <div id="labelQueueList" class="max-h-28 overflow-y-auto divide-y divide-slate-100 text-[11px] text-slate-600"></div>
           </div>
         </div>
 
-        <!-- 右側：10×10 cm 1:1 實體比例即時預覽與列印操作 (5欄) -->
-        <div class="lg:col-span-5 flex flex-col items-center justify-between bg-slate-200/80 rounded-xl p-3 border border-slate-300">
+        <!-- 右側：10×10 cm 實際尺寸即時預覽區 (5欄) -->
+        <div class="lg:col-span-5 flex flex-col items-center justify-between bg-slate-200/80 p-3 rounded-xl border border-slate-300">
           <div class="w-full flex items-center justify-between text-xs mb-2">
-            <span class="font-bold text-slate-700"><i class="fa-solid fa-eye mr-1 text-purple-700"></i>10 × 10 cm 實體比例預覽</span>
-            <span class="text-[11px] bg-white px-2 py-0.5 rounded-full font-semibold text-slate-600 border">QR 2.6 × 2.6 cm</span>
+            <span class="font-bold text-slate-700"><i class="fa-solid fa-eye text-purple-700 mr-1"></i>10×10 cm 實際版面預覽</span>
+            <span class="text-[11px] bg-white px-2 py-0.5 rounded border border-slate-300 font-mono text-slate-600">QR 1:1 正方形</span>
           </div>
 
-          <!-- 10x10cm 預覽容器 (手機自動等比例縮放置中，不裁切左側文字) -->
-          <div id="labelPreviewViewport" class="flex-1 label-preview-viewport py-1">
+          <!-- 標籤實體預覽外框（手機版自動等比例縮放完整置中，避免裁切） -->
+          <div id="labelPreviewViewport" class="label-preview-viewport my-auto py-1">
             <div id="labelPreviewScaler" class="label-preview-scaler">
-              <div id="labelPreviewMount" class="shadow-xl"></div>
+              <div id="labelPreviewMount" class="shadow-xl bg-white"></div>
             </div>
           </div>
 
-          <div class="w-full pt-3 mt-2 border-t border-slate-300 space-y-2">
+          <div class="w-full mt-3 space-y-2">
+            <div class="bg-white/90 border border-slate-300 rounded-lg px-2.5 py-1.5 text-[11px] text-slate-600 font-mono break-all">
+              <span class="font-sans font-bold text-slate-700">QR 編碼內容：</span><strong id="lblQrPayloadPreview">0099008|3685-260126QR|2029-01-26</strong>
+            </div>
             <div class="grid grid-cols-2 gap-2">
-              <button type="button" onclick="printSingleCurrentLabel()" class="py-2 px-3 rounded-xl bg-purple-800 hover:bg-purple-900 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
-                <i class="fa-solid fa-print"></i> 立即列印此張 (10×10cm)
+              <button type="button" onclick="printSingleCurrentLabel()" class="py-2 rounded-lg text-xs font-bold bg-slate-800 hover:bg-slate-900 text-white shadow-sm flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-print"></i> 立即列印此張 (1張)
               </button>
-              <button type="button" id="printQueueBtn" onclick="printLabelQueue()" disabled class="py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white font-bold text-xs shadow-sm flex items-center justify-center gap-1.5 transition">
-                <i class="fa-solid fa-print"></i> 批量列印佇列 (<span id="printQueueBtnCount">0</span>)
+              <button type="button" id="printQueueBtn" onclick="printLabelQueue()" disabled class="py-2 rounded-lg text-xs font-bold bg-amber-500 hover:bg-amber-600 text-slate-950 disabled:opacity-40 shadow-sm flex items-center justify-center gap-1.5 transition">
+                <i class="fa-solid fa-print"></i> 列印全部佇列 (<span id="printQueueBtnCount">0</span>)
               </button>
             </div>
-            <p class="text-[10px] text-slate-500 text-center">列印時請將印表機紙張設為 <strong>100mm × 100mm</strong>、縮放比例設為 <strong>100%（無邊界）</strong>。</p>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 專用列印輸出容器 (僅在觸發列印時顯示，確保 100mm x 100mm 精準分頁) -->
+  <!-- 專屬 10×10 cm 列印輸出容器 (僅在 window.print() 時顯示) -->
   <div id="labelPrintContainer" class="hidden"></div>
-
 </body>
 </html>
